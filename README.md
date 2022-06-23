@@ -2,6 +2,7 @@
 
 A simple G-code feeder that can be accessed wirelessly.
 G-codes can be sent manually by the http:// api or automatically from a G-code file.
+Example application: [thingiverse.com/thing:3960533](https://www.thingiverse.com/thing:3960533)
 
 <img width=30% src="https://github.com/photogrammetry-scanner/docs/blob/main/images/overview.png" />
 
