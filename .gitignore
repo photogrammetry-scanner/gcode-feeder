@@ -1,3 +1,13 @@
+# platformio
+cmake-build-*
+Cmake-build-*
+CMakeLists.txt
+CMakeListsPrivate.txt
+.pio
+
+# IDE
+.idea
+
 # Prerequisites
 *.d
 
