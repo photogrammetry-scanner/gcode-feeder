@@ -8,7 +8,7 @@ G-codes can be sent manually by the http:// api or automatically from a G-code f
 
 **Note:**
 - This firmware is tailored for the Wemos D1 mini with attached OLED display shield and the GRBL CNC firmware.
-- see als this [docs](https://github.com/photogrammetry-scanner/docs/)
+- see also this [docs](https://github.com/photogrammetry-scanner/docs/)
 
 **Description**
 
@@ -39,4 +39,4 @@ pio device monitor
 On first installation the wireless manager will open an access point with captive portal to configure the
 username/passwort for the local wireless lan.
 
-If connected to WLAN, the ip-address of the http::// UI will be shown on the display.
+Once the controller is connected to WLAN, the ip-address for accessing the http::// UI will be shown on the display.
