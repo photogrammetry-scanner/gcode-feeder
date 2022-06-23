@@ -1,253 +1,161 @@
 #include "WebServerHooks.h"
 #include "FS.h"
 #include <ESPAsyncWebServer.h>
-#include <ESPAsyncWiFiManager.h>
 #include <LittleFS.h>
 #include <WString.h>
 
 void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = "", const String &extra_post_html = "")
 {
     Serial.println("WebServerHooks -> indexHtml");
-
-    String info;
-    info += "<html>";
-    info += "  <h1> Firmware ";
-    info += ESP.getSketchMD5();
-    info += " size  ";
-    info += ESP.getSketchSize();
-    info += "  </h1> ";
-    if(extra_pre_html.length() > 0)
-        info += extra_pre_html;
-
-    info += "  <b>Device</b>";
-    info += "  <ul>";
-    info += "    <li><a href=/status>device status</a></li>";
-    info += "    <li><a href=/reboot>reboot</a></li>";
-    info += "    <li><a href=/resetWifi>reset wifi settings</a></li>";
-    info += "    <li><a href=/files>list files</a></li>";
-    info += "    <li><a href=/file?name=test.g>read file test.g</a></li>";
-    info += "  </ul>";
-
-    info += "  <b>CNC Controller (send gcode)</b>";
-    info += "  <ul>";
-    info += "    <li><a href=/logs>controller logs</a></li>";
-    info += "    <li><a href=/sendGcode?line=G91>G91 (relative motion)</a></li>";
-    info += "    <li><a href=/sendGcode?line=G1%20X+10%20F2000>G1 X+10 F2000 (move X+)</a></li>";
-    info += "    <li><a href=/sendGcode?line=G1%20X-10%20F2000>G1 X-10 F2000 (move X-)</a></li>";
-    info += "    <li><a href=/sendGcode?line=G1%20Z+10%20F2000>G1 Z+10 F2000 (move Z+)</a></li>";
-    info += "    <li><a href=/sendGcode?line=G1%20Z-10%20F2000>G1 Z-10 F2000 (move Z-)</a></li>";
-    info += "    <li><a href=/runFile?name=test.g>run from file 'test.g'</a></li>";
-    info += "  </ul>";
-
-    if(extra_post_html.length() > 0)
-        info += extra_post_html;
-    info += "</html>";
-    request.send(200, "text/html", info);
+    String html{
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "  <head>\n"
+        "    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n"
+        "    <title>G-Code Feeder</title>\n"
+        "  </head>\n"
+        "  <body>\n"
+        "    <b>Api Examples</b>\n"
+        "    <table>\n"
+        "      <thead>\n"
+        "        <tr>\n"
+        "          <th align='left'>URL Example</th>\n"
+        "          <th align='left'>Description</th>\n"
+        "          <th align='left'>Arguments</th>\n"
+        "        </tr>\n"
+        "      </thead>\n"
+        "      <tbody id='apiExamples'>\n"
+        "      </tbody>\n"
+        "    </table>\n"
+        "\n"
+        "    <p/>\n"
+        "    <b>Firmware</b>\n"
+        "    <ul>\n"
+        "      <li id='sketchHash'>x</li>\n"
+        "      <li id='sketchSize'>x</li>\n"
+        "    </ul>\n"
+        "\n"
+        "    <script>\n"
+        "      fetch('/status')\n"
+        "        .then(response => response.json())\n"
+        "        .then(data => {\n"
+        "          document.querySelector('#sketchHash').innerText = 'hash ' + "
+        "data.message.sketch_md5\n"
+        "          document.querySelector('#sketchSize').innerText = 'size ' + "
+        "data.message.sketch_size_byte\n"
+        "        })\n"
+        "\n"
+        "      fetch('/help')\n"
+        "        .then(response => response.json())\n"
+        "        .then(data => {\n"
+        "          tbody = document.querySelector('#apiExamples')\n"
+        "          for (var example in data.message) {\n"
+        "            var url = example\n"
+        "            var description = data.message[example].description\n"
+        "            var args = data.message[example].args\n"
+        "            var argExample = data.message[example].example\n"
+        "            argExample = argExample ? ('?' + argExample) : ''\n"
+        "            trow = tbody.insertRow()\n"
+        "            a = document.createElement('a')\n"
+        "            a.appendChild(document.createTextNode(url + argExample))\n"
+        "            a.title = url + argExample\n"
+        "            a.href = url + argExample\n"
+        "            trow.insertCell().appendChild(a)\n"
+        "            trow.insertCell().appendChild(document.createTextNode(description))\n"
+        "            trow.insertCell().appendChild(document.createTextNode('[' + args + ']'))\n"
+        "          }\n"
+        "        })\n"
+        "\n"
+        "    </script>\n"
+        "  </body>\n"
+        "</html>"
+    };
+    /*
+        info += "    <li><a href=/sendgcode?line=G91>G91 (relative motion)</a></li>";
+        info += "    <li><a href=/sendgcode?line=G1%20X+10%20F2000>G1 X+10 F2000 (move X+)</a></li>";
+        info += "    <li><a href=/sendgcode?line=G1%20X-10%20F2000>G1 X-10 F2000 (move X-)</a></li>";
+        info += "    <li><a href=/sendgcode?line=G1%20Z+10%20F2000>G1 Z+10 F2000 (move Z+)</a></li>";
+        info += "    <li><a href=/sendgcode?line=G1%20Z-10%20F2000>G1 Z-10 F2000 (move Z-)</a></li>";
+    */
+    request.send(200, "text/html", html);
 }
 
 
-void reboot(AsyncWebServerRequest &request)
+void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
     Serial.println("WebServerHooks -> reboot");
-    request.send(200, "text/html", "reboot");
-    delay(1000);
-    ESP.restart();
+    String info{ "{\n  \"message\":\"reboot\",\n" };
+    info += "  \"request\":\"ok\"\n}";
+    request.send(200, "application/json", info);
+    operatingMode.switchState(OperatingState::State::DoReboot);
 }
 
 
-void deviceStatus(AsyncWebServerRequest &request, const String &extra_pre_html = "", const String &extra_post_html = "")
+void deviceStatus(AsyncWebServerRequest &request)
 {
     Serial.println("WebServerHooks -> deviceStatus");
     String status;
-    status += "<html>";
-    if(extra_pre_html.length() > 0)
-        status += extra_pre_html;
-    status += "  <table>"
-              "    <tr>"
-              "      <th>status</th>"
-              "      <th>value</th>"
-              "    </tr>"
-              "    <tr>"
-              "      <td>shutdown reason</td>"
-              "      <td>";
-    status += ESP.getResetReason().c_str();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>VCC [mV]</td>"
-              "      <td>";
-    status += ESP.getVcc();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>free heap [B]</td>"
-              "      <td>";
-    status += ESP.getFreeHeap();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>max. free block size </td>"
-              "      <td>";
-    status += ESP.getMaxFreeBlockSize();
-    status += "</td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>heap fragmentation [%]</td>"
-              "      <td>";
-    status += ESP.getHeapFragmentation();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>free continuous stack [B]</td>"
-              "      <td>";
-    status += ESP.getFreeContStack();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>SDK version</td>"
-              "      <td>";
-    status += ESP.getSdkVersion();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>core version</td>"
-              "      <td>";
-    status += ESP.getCoreVersion();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>full version</td>"
-              "      <td>";
-    status += ESP.getFullVersion();
-    status += "</td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>boot loader version</td>"
-              "      <td>";
-    status += ESP.getBootVersion();
-    status += "</td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>boot mode</td>"
-              "      <td>";
-    status += ESP.getBootMode();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>CPU frequency [MHz]</td>"
-              "      <td>";
-    status += ESP.getCpuFreqMHz();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip ID</td>"
-              "      <td>";
-    status += ESP.getFlashChipId();
-    status += "</td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip vendor ID</td>"
-              "      <td>";
-    status += ESP.getFlashChipVendorId();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip real size[B]</td>"
-              "      <td>";
-    status += ESP.getFlashChipRealSize();
+    status += "\n    \"shutdown_reason\":\"";
+    status += EspClass::getResetReason().c_str();
+    status += "\",\n    \"vcc_mv\":\"";
+    status += EspClass::getVcc();
+    status += "\",\n    \"free_heap_bytes\":\"";
+    status += EspClass::getFreeHeap();
+    status += "\",\n    \"free_block_size\":\"";
+    status += EspClass::getMaxFreeBlockSize();
+    status += "\",\n    \"heap_fragmentation_percent\":\"";
+    status += EspClass::getHeapFragmentation();
+    status += "\",\n    \"free_continuous_stak_byte\":\"";
+    status += EspClass::getFreeContStack();
+    status += "\",\n    \"sdk_version\":\"";
+    status += EspClass::getSdkVersion();
+    status += "\",\n    \"core_version\":\"";
+    status += EspClass::getCoreVersion();
+    status += "\",\n    \"full_version\":\"";
+    status += EspClass::getFullVersion();
+    status += "\",\n    \"bootloader_version\":\"";
+    status += EspClass::getBootVersion();
+    status += "\",\n    \"boot_mode\":\"";
+    status += EspClass::getBootMode();
+    status += "\",\n    \"cpu_frequency_mhz\":\"";
+    status += EspClass::getCpuFreqMHz();
+    status += "\",\n    \"flash_chip_id\":\"";
+    status += EspClass::getFlashChipId();
+    status += "\",\n    \"flash_chip_vendor_id\":\"";
+    status += EspClass::getFlashChipVendorId();
+    status += "\",\n    \"flash_chip_real_size_byte\":\"";
+    status += EspClass::getFlashChipRealSize();
+    status += "\",\n    \"flash_chip_size_byte\":\"";
+    status += EspClass::getFlashChipSize();
+    status += "\",\n    \"flash_chip_speed_hz\":\"";
+    status += EspClass::getFlashChipSpeed();
+    status += "\",\n    \"flash_chip_mode\":\"";
+    status += EspClass::getFlashChipMode();
+    status += "\",\n    \"flash_chip_size_by_chip_id\":\"";
+    status += EspClass::getFlashChipSizeByChipId();
+    status += "\",\n    \"sketch_size_byte\":\"";
+    status += EspClass::getSketchSize();
+    status += "\",\n    \"sketch_md5\":\"";
+    status += EspClass::getSketchMD5();
+    status += "\",\n    \"free_sketch_space_byte\":\"";
+    status += EspClass::getFreeSketchSpace();
+    status += "\",\n    \"reset_reason\":\"";
+    status += EspClass::getResetReason();
+    status += "\",\n    \"reset_info\":\"";
+    status += EspClass::getResetInfo();
+    status += "\"";
 
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip size [B]</td>"
-              "      <td>";
-    status += ESP.getFlashChipSize();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip speed [Hz]</td>"
-              "      <td>";
-    status += ESP.getFlashChipSpeed();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip mode</td>"
-              "      <td>";
-    status += ESP.getFlashChipMode();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>flash chip size by chip ID</td>"
-              "      <td>";
-    status += ESP.getFlashChipSizeByChipId();
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>sketch size [B]</td>"
-              "      <td>";
-    status += ESP.getSketchSize();
-    status += "      </td>"
-              "    </tr>";
-
-    status += "    <tr>"
-              "      <td>sketch MD5</td>"
-              "      <td>";
-    status += ESP.getSketchMD5();
-    status += "      </td>"
-              "    </tr>";
-
-    status += "    <tr>"
-              "      <td>free sketch space [B]</td>"
-              "      <td>";
-    status += ESP.getFreeSketchSpace();
-
-    status += "      </td>"
-              "    </tr>";
-    status += "    <tr>"
-              "      <td>reset reason</td>"
-              "      <td>";
-    status += ESP.getResetReason();
-    status += "      </td>"
-              "    </tr>";
-
-    status += "    <tr>"
-              "      <td>reset info</td>"
-              "      <td>";
-    status += ESP.getResetInfo();
-    status += "      </td>"
-              "    </tr>";
-    status += "  <table>";
-    if(extra_post_html.length() > 0)
-        status += extra_post_html;
-    status += "</html>";
-
-    request.send(200, "text/html", status);
+    request.send(200, "application/json", "{\n  \"message\":{\n" + status + "\n  },\n  \"request\":\"ok\"\n}");
 }
 
 
-void resetWifi(AsyncWebServerRequest &request,
-               AsyncWebServer &webServer,
-               DNSServer &dnsServer,
-               const String &extra_pre_html = "",
-               const String &extra_post_html = "")
+void resetWifi(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
     Serial.println("WebServerHooks -> resetWifi");
-    String info;
-    info += "<html>";
-    if(extra_pre_html.length() > 0)
-        info += extra_pre_html;
-    info += "resetting wifi settings and reboot ...";
-    if(extra_post_html.length() > 0)
-        info += extra_post_html;
-    info += "</html>";
-
-    request.send(200, "text/html", info);
-
-    delay(2000);
-    AsyncWiFiManager wifiManager(&webServer, &dnsServer);
-    wifiManager.setDebugOutput(false);
-    wifiManager.resetSettings();
-    ESP.restart();
+    String info{ "{\n  \"message\":\"reset wifi settings and reboot\",\n" };
+    info += "  \"request\":\"ok\"\n}";
+    request.send(200, "application/json", info);
+    operatingMode.switchState(OperatingState::State::DoResetWifi);
 }
 
 
@@ -257,44 +165,58 @@ void sendGcode(AsyncWebServerRequest &request,
                const String &extra_pre_html = "",
                const String &extra_post_html = "")
 {
-    String info;
     Serial.println("WebServerHooks -> sendGcode");
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
         Serial.println("cannot accept gcode via http while not in idle (" + operatingMode.toString() + ")");
-        request.send(200, "text/html",
-                     "cannot accept gcode via http while not in idle (" + operatingMode.toString() + ")");
+        String error{ "{" };
+        error += "\n  \"message\":\"cannot accept gcode via http while not in idle,"
+                 " current mode is " +
+                 operatingMode.toString() + "\",";
+        error += "\n  \"request\":\"error\"";
+        error += "}";
+        request.send(200, "application/json", error);
         return;
     }
 
-    if(request.hasParam("line"))
+    String message;
+    String requestStatus{ "ok" };
+    if(request.hasParam("gcode"))
     {
-        if(request.hasArg("line"))
+        if(request.hasArg("gcode"))
         {
-            String gcode{ request.getParam("line")->value() };
-            info += "gcode=" + gcode + "<br/>";
+            String gcode{ request.getParam("gcode")->value() };
+            message += "gcode='" + gcode + "'";
 
             if(gcodeBuffer.isProcessed())
             {
                 Serial.println("buffer gcode='" + gcode + "'");
-                gcodeBuffer.setGcode(gcode);
+                message += " buffered";
             }
             else
             {
-                Serial.println("failed to buffer gcode, skipping '" + gcode + "'");
+                Serial.println("failed to buffer gcode '" + gcode +
+                               "' while processing other gcode '" + gcodeBuffer.getGcode() + "'");
+                message += " not buffered, still processing other gcode '" + gcodeBuffer.getGcode() + "'";
+                requestStatus = "error";
             }
         }
         else
         {
-            Serial.println("failed to retrieve value from http-request");
+            message = "failed to retrieve value of argument 'gcode' from http request";
+            requestStatus = "error";
+            Serial.println(message);
         }
     }
     else
     {
-        info += "get-parameter 'line' not found<br/>";
+        message = "failed to retrieve argument 'gcode' from http request";
+        requestStatus = "error";
     }
-    request.send(200, "text/html", info);
+
+    request.send(200, "application/json",
+                 "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + requestStatus + "\"\n}");
 }
 
 
@@ -302,51 +224,57 @@ void listFiles(AsyncWebServerRequest &request)
 {
     Serial.println("WebServerHooks -> listFiles");
 
-    Serial.printf("listing directory: /\n");
-    String dirListing;
+    String message;
+    String requestStatus{ "ok" };
 
-    File root = LittleFS.open("/", "r");
+    const String path = "/";
+    File root = LittleFS.open(path, "r");
     if(!root)
     {
-        Serial.println("failed to open directory");
-        request.send(200, "text/html", "failed to open directory");
+        message = "failed to open directory";
+        Serial.println(message);
+        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
         return;
     }
     if(!root.isDirectory())
     {
-        Serial.println("not a directory");
-        request.send(200, "text/html", "not a directory");
+        message = "'" + path + "' is not a directory";
+        Serial.println(message);
+        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
         return;
     }
 
     File file = root.openNextFile();
-    dirListing += ("<html>");
+    String isFirstItem{ true };
     while(file)
     {
-        if(file.isDirectory())
-        {
+        String type{ file.isDirectory() ? "dir" : "file" };
+        String fileSize{ file.isDirectory() ? "0" : String(file.size()) };
+        const time_t t = file.getLastWrite();
+        const struct tm *ts = localtime(&t);
 
-            dirListing += String() + "dir  " + file.name() + " ";
-            time_t t = file.getLastWrite();
-            struct tm *tmstruct = localtime(&t);
-            dirListing += String() + "date: " + ((tmstruct->tm_year) + 1900) + "." +
-                          ((tmstruct->tm_mon) + 1) + "." + tmstruct->tm_mday + " " +
-                          "time: " + tmstruct->tm_hour + ":" + tmstruct->tm_min + ":" + tmstruct->tm_sec;
+        if(isFirstItem)
+        {
+            isFirstItem = false;
+            message += String() + "\n    \"" + file.name() + "\":{\n  ";
         }
         else
-        {
-            dirListing += String() + "file " + file.name() + " size: " + file.size() + " ";
-            time_t t = file.getLastWrite();
-            struct tm *tmstruct = localtime(&t);
-            dirListing += String() + "date: " + ((tmstruct->tm_year) + 1900) + "." +
-                          ((tmstruct->tm_mon) + 1) + "." + tmstruct->tm_mday + " " +
-                          "time: " + tmstruct->tm_hour + ":" + tmstruct->tm_min + ":" + tmstruct->tm_sec;
-        }
+            message += String() + ",\n    \"" + file.name() + "\":{\n";
+
+        message += String() + R"(      "type":")" + type + "\",\n";
+        message += String() + R"(      "year":")" + String((ts->tm_year) + 1900) + "\",\n";
+        message += String() + R"(      "month":")" + String(ts->tm_mon + 1) + "\",\n";
+        message += String() + R"(      "day":")" + String(ts->tm_mday) + "\",\n";
+        message += String() + R"(      "hour":")" + String(ts->tm_hour) + "\",\n";
+        message += String() + R"(      "minute":")" + String(ts->tm_min) + "\",\n";
+        message += String() + R"(      "second":")" + String(ts->tm_sec) + "\",\n";
+        message += String() + R"(      "size_byte":")" + fileSize + "\"\n";
+        message += "    }";
+
         file = root.openNextFile();
     }
-    dirListing += ("</html>");
 
-    request.send(200, "text/html", dirListing);
+    request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"ok\"\n}");
 }
 
 
@@ -360,8 +288,9 @@ void readFile(AsyncWebServerRequest &request)
 
     if(!LittleFS.exists(path))
     {
-        Serial.println("failed to read file '" + path + "', file does not exist");
-        request.send(200, "text/html", "failed to read file name='" + path + "', file does not exist");
+        const String message{ "failed to read file '" + path + "', file does not exist" };
+        Serial.println(message);
+        request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"error\"\n}");
         return;
     }
 
@@ -377,9 +306,10 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
-        Serial.println("cannot start processing file while not in idle (" + operatingMode.toString() + ")");
-        request.send(200, "text/html",
-                     "cannot start processing file while not in idle(" + operatingMode.toString() + ")");
+        const String message{ "cannot start processing file while not in idle (" +
+                              operatingMode.toString() + ")" };
+        Serial.println(message);
+        request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"error\"\n}");
         return;
     }
 
@@ -388,15 +318,39 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
 
     if(!LittleFS.exists(path))
     {
-        Serial.println("failed to start processing file '" + path + "', file does not exist");
-        request.send(200, "text/html", "failed to start processing file '" + path + "', file does not exist");
+        const String message{ "failed to start processing file '" + path + "', file does not exist" };
+        Serial.println(message);
+        request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"error\"\n}");
         return;
     }
 
     fileRunner.reset();
     fileRunner.setFilepath(path);
     operatingMode.switchState(OperatingState::State::RunningFromFile);
-    request.send(200, "text/html", "start processing file '" + path + "'");
+    const String message{ "start processing file '" + path + "'" };
+    request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"ok\"\n}");
+}
+
+
+void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingMode)
+{
+    request.send(200, "application/json",
+                 "{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}");
+}
+
+
+void getGcodeStatus(AsyncWebServerRequest &request, GcodeBuffer &gcodeBuffer)
+{
+    String info;
+    info += String() + R"("gcode":")" + gcodeBuffer.getGcode() + "\",\n    ";
+    info += String() + R"("is_transmitted":")" + gcodeBuffer.isTransmitted() + "\",\n    ";
+    info += String() + R"("is_processed":")" + gcodeBuffer.isProcessed() + "\",\n    ";
+    info += String() + R"("response":")" + gcodeBuffer.getResponse() + "\",\n    ";
+    info += String() + R"("is_response_ok":")" + gcodeBuffer.isResponseOk() + "\",\n    ";
+    info += String() + R"("response_error_code":")" + gcodeBuffer.getErrorCode() + "\",\n    ";
+    info += String() + R"("is_motion_finished":")" + gcodeBuffer.isMotionFinished() + "\"  ";
+
+    request.send(200, "application/json", "{\n  \"message\":{\n    " + info + "},\n  \"request\":\"ok\"\n}");
 }
 
 
@@ -406,17 +360,50 @@ void WebServerHooks::setup(Resources &r)
     r.webServer.reset();
 
     r.webServer.on("/", [](AsyncWebServerRequest *request) { indexHtml(*request); });
-    r.webServer.on("/reboot", [](AsyncWebServerRequest *request) { reboot(*request); });
+    r.webServer.on("/reboot",
+                   [&](AsyncWebServerRequest *request) { reboot(*request, r.operatingMode); });
     r.webServer.on("/status", [](AsyncWebServerRequest *request) { deviceStatus(*request); });
-    r.webServer.on("/resetWifi", [&](AsyncWebServerRequest *request)
-                   { resetWifi(*request, r.webServer, r.dnsServer); });
-    r.webServer.on("/sendGcode", [&](AsyncWebServerRequest *request)
-                   { sendGcode(*request, r.gcodeBuffer, r.operatingMode); });
+    r.webServer.on("/resetwifi",
+                   [&](AsyncWebServerRequest *request) { resetWifi(*request, r.operatingMode); });
+
     r.webServer.on("/files", [&](AsyncWebServerRequest *request) { listFiles(*request); });
     r.webServer.on("/file", [&](AsyncWebServerRequest *request) { readFile(*request); });
-    r.webServer.on("/runFile", [&](AsyncWebServerRequest *request)
-                   { runFile(*request, r.gcodeFileRunner, r.operatingMode); });
 
-    r.webServer.onNotFound([](AsyncWebServerRequest *request)
-                           { request->send(404, "text/html", "URL not found."); });
+    r.webServer.on("/sendgcode", [&](AsyncWebServerRequest *request)
+                   { sendGcode(*request, r.gcodeBuffer, r.operatingMode); });
+    r.webServer.on("/runfile", [&](AsyncWebServerRequest *request)
+                   { runFile(*request, r.gcodeFileRunner, r.operatingMode); });
+    r.webServer.on("/operatingmode", [&](AsyncWebServerRequest *request)
+                   { getOperatingMode(*request, r.operatingMode); });
+
+    r.webServer.on("/gcodestatus",
+                   [&](AsyncWebServerRequest *request) { getGcodeStatus(*request, r.gcodeBuffer); });
+
+    r.webServer.on(
+    "/help",
+    [](AsyncWebServerRequest *request)
+    {
+        // clang-format off
+                       const String knownHooks{
+                           "\n" R"(    "/":{"args":[], "example":"", "description":"welcome page"},)"
+                           "\n" R"(    "/status":{"args":[], "example":"", "description":"retrieve hardware status"},)"
+                           "\n" R"(    "/operatingmode":{"args":[], "example":"", "description":"retrieve the current operating state, see OperatingState.h"},)"
+                           "\n" R"(    "/reboot":{"args":[], "example":"", "description":"reboot hardware"},)"
+                           "\n" R"(    "/resetwifi":{"args":[], "example":"", "description":"reset wifi settings and reboot"},)"
+                           "\n" R"(    "/sendgcode":{"args":["gcode"], "example":"gcode=G91", "description":"send <gcode> to controller"},)"
+                           "\n" R"(    "/gcodestatus":{"args":[], "example":"", "description":"retrieve the processing status of last gcode"},)"
+                           "\n" R"(    "/file":{"args":["name"], "example":"name=test.g", "description":"retrieve the content of file <name> as text/plain, in case of error json as application/json"},)"
+                           "\n" R"(    "/files":{"args":[], "example":"", "description":"lists content of the top level directory"},)"
+                           "\n" R"(    "/runfile":{"args":["name"], "example":"name=test.g", "description":"runs gcode from file <name>"},)"
+                           "\n" R"(    "/help":{"args":[], "example":"", "description":"retrieves the api description"})"
+                       };
+        // clang-format on
+        request->send(200, "application/json", "{\n  \"message\":{ " + knownHooks + "\n  },\n  \"request\":\"ok\"\n}");
+    });
+
+    r.webServer.onNotFound(
+    [](AsyncWebServerRequest *request)
+    {
+        request->send(404, "application/json", "{\n  \"message\":\"URL not found\",\n  \"request\":\"error\"\n}");
+    });
 }

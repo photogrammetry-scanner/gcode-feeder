@@ -14,6 +14,8 @@ struct OperatingState
         WaitCommandFromFileMotion, // wait until motion is finished (while processing file)
         PausedFromFile,            // on pause request while processing file
         FinishedFromFile,          // intermediate state before returning to idle
+        DoResetWifi,               // on reset wifi request
+        DoReboot,                  // on reboot request
         Invalid,
     };
 

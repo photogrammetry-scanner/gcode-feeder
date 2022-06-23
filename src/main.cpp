@@ -6,9 +6,6 @@
 
 struct Firmware : public Resources
 {
-    Firmware() : Resources() {}
-
-
     void handleCncResponse()
     {
         static uint8_t subsequentErrors;
@@ -192,6 +189,25 @@ struct Firmware : public Resources
             operatingMode.switchState(OperatingState::State::Idle);
     }
 
+
+    void handleResetWifi()
+    {
+        if(!operatingMode.isState(OperatingState::State::DoResetWifi))
+            return;
+        AsyncWiFiManager wifiManager(&webServer, &dnsServer);
+        wifiManager.setDebugOutput(false);
+        wifiManager.resetSettings();
+        EspClass::restart();
+    }
+
+
+    void handleReboot()
+    {
+        if(!operatingMode.isState(OperatingState::State::DoReboot))
+            return;
+        EspClass::restart();
+    }
+
     void process()
     {
         cncSerialBuffer.read();
@@ -200,6 +216,9 @@ struct Firmware : public Resources
         feedGcodeBufferFromFile();
         sendBufferedGcode();
         waitForMotionFinished();
+
+        handleResetWifi();
+        handleReboot();
     }
 } f;
 

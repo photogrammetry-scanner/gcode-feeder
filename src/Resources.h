@@ -34,10 +34,13 @@ typedef struct Resources
     } _veryEarlyInit = {};
 
     OperatingState operatingMode{};
+
     DNSServer dnsServer{};
     AsyncWebServer webServer{ 80 };
+
     SoftwareSerial cncSerial{};
     LineBufferedStream cncSerialBuffer{ cncSerial };
+
     Display display;
 
     GcodeBuffer gcodeBuffer;

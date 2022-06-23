@@ -37,6 +37,10 @@ String OperatingState::toString(OperatingState::State s)
         return "FinishedFromFile";
     case State::Invalid:
         return "Invalid";
+    case State::DoResetWifi:
+        return "DoResetWifi";
+    case State::DoReboot:
+        return "DoReboot";
     default:
         return "UNKNOWN";
     }

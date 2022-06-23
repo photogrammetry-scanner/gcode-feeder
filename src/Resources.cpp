@@ -67,6 +67,7 @@ void Resources::setup()
     WebServerHooks::setup(*this);
     webServer.begin();
 
+
     Serial.println("Firmware::setup done");
     operatingMode.switchState(OperatingState::State::WaitingForCncController);
 }
