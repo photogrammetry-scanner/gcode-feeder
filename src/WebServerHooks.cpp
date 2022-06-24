@@ -35,6 +35,12 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
         "      <li id='sketchSize'>x</li>\n"
         "    </ul>\n"
         "\n"
+        "    <form method=\"POST\" action=\"/uploadfile\" enctype=\"multipart/form-data\">\n"
+        "      <input type=\"file\" name=\"data\"/>\n"
+        "      <input type=\"submit\" name=\"upload\" value=\"Upload File\" title=\"Upload "
+        "File\">\n"
+        "    </form>\n"
+        "\n"
         "    <script>\n"
         "      fetch('/status')\n"
         "        .then(response => response.json())\n"
@@ -83,7 +89,8 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
 
 void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> reboot");
+    Serial.println("WebServerHooks -> reboot: " + request.client()->remoteIP().toString() + " -> " +
+                   request.url());
     String info{ "{\n  \"message\":\"reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
     request.send(200, "application/json", info);
@@ -93,7 +100,8 @@ void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 
 void deviceStatus(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> deviceStatus");
+    Serial.println("WebServerHooks -> deviceStatus: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
     String status;
     status += "\n    \"shutdown_reason\":\"";
     status += EspClass::getResetReason().c_str();
@@ -151,7 +159,8 @@ void deviceStatus(AsyncWebServerRequest &request)
 
 void resetWifi(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> resetWifi");
+    Serial.println("WebServerHooks -> resetWifi: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
     String info{ "{\n  \"message\":\"reset wifi settings and reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
     request.send(200, "application/json", info);
@@ -165,7 +174,8 @@ void sendGcode(AsyncWebServerRequest &request,
                const String &extra_pre_html = "",
                const String &extra_post_html = "")
 {
-    Serial.println("WebServerHooks -> sendGcode");
+    Serial.println("WebServerHooks -> sendGcode: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
@@ -222,7 +232,8 @@ void sendGcode(AsyncWebServerRequest &request,
 
 void listFiles(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> listFiles");
+    Serial.println("WebServerHooks -> listFiles: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
 
     String message;
     String requestStatus{ "ok" };
@@ -280,7 +291,8 @@ void listFiles(AsyncWebServerRequest &request)
 
 void readFile(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> readFile");
+    Serial.println("WebServerHooks -> readFile: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
     String path = "NA";
 
     if(request.hasArg("name"))
@@ -290,7 +302,7 @@ void readFile(AsyncWebServerRequest &request)
     {
         const String message{ "failed to read file '" + path + "', file does not exist" };
         Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"error\"\n}");
+        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
         return;
     }
 
@@ -299,9 +311,46 @@ void readFile(AsyncWebServerRequest &request)
 }
 
 
+void deleteFile(AsyncWebServerRequest &request)
+{
+    Serial.println("WebServerHooks -> deleteFile: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
+    String path = "NA";
+
+    if(request.hasArg("name"))
+        path = request.getParam("name")->value();
+
+    if(!LittleFS.exists(path))
+    {
+        const String message{ "failed to delete file '" + path + "', file does not exist" };
+        Serial.println(message);
+        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        return;
+    }
+
+    String result;
+    String message;
+    if(!LittleFS.remove(path))
+    {
+        result = "error";
+        message = "failed to delete file '" + path + "'";
+        Serial.println(message);
+    }
+    else
+    {
+        result = "ok";
+        message = "file '" + path + "' deleted";
+        Serial.println(message);
+    }
+    request.send(200, "application/json",
+                 "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + result + "\"\n}");
+}
+
+
 void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> runFile");
+    Serial.println("WebServerHooks -> runFile: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
     String path = "NA";
 
     if(!operatingMode.isState(OperatingState::State::Idle))
@@ -309,7 +358,7 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
         const String message{ "cannot start processing file while not in idle (" +
                               operatingMode.toString() + ")" };
         Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"error\"\n}");
+        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
         return;
     }
 
@@ -320,7 +369,7 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
     {
         const String message{ "failed to start processing file '" + path + "', file does not exist" };
         Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"error\"\n}");
+        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
         return;
     }
 
@@ -334,6 +383,8 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
 
 void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
+    Serial.println("WebServerHooks -> getOperatingMode: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
     request.send(200, "application/json",
                  "{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}");
 }
@@ -341,6 +392,8 @@ void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingM
 
 void getGcodeStatus(AsyncWebServerRequest &request, GcodeBuffer &gcodeBuffer)
 {
+    Serial.println("WebServerHooks -> getGcodeStatus: " + request.client()->remoteIP().toString() +
+                   " -> " + request.url());
     String info;
     info += String() + R"("gcode":")" + gcodeBuffer.getGcode() + "\",\n    ";
     info += String() + R"("is_transmitted":")" + gcodeBuffer.isTransmitted() + "\",\n    ";
@@ -351,6 +404,32 @@ void getGcodeStatus(AsyncWebServerRequest &request, GcodeBuffer &gcodeBuffer)
     info += String() + R"("is_motion_finished":")" + gcodeBuffer.isMotionFinished() + "\"  ";
 
     request.send(200, "application/json", "{\n  \"message\":{\n    " + info + "},\n  \"request\":\"ok\"\n}");
+}
+
+
+void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
+{
+    Serial.println("WebServerHooks -> handleUplod: " + request->client()->remoteIP().toString() +
+                   " -> " + request->url());
+
+    if(!index)
+    {
+        Serial.println("upload '" + String(filename) + "' started");
+        request->_tempFile = LittleFS.open("/" + filename, "w");
+    }
+
+    if(len)
+    {
+        request->_tempFile.write(data, len);
+        Serial.println("writing file '" + String(filename) + "' index=" + String(index) + " len=" + String(len));
+    }
+
+    if(final)
+    {
+        request->_tempFile.close();
+        Serial.println("upload '" + String(filename) + "' completed, size=" + String(index + len));
+        request->redirect("/");
+    }
 }
 
 
@@ -368,6 +447,9 @@ void WebServerHooks::setup(Resources &r)
 
     r.webServer.on("/files", [&](AsyncWebServerRequest *request) { listFiles(*request); });
     r.webServer.on("/file", [&](AsyncWebServerRequest *request) { readFile(*request); });
+    r.webServer.on("/deletefile", [&](AsyncWebServerRequest *request) { deleteFile(*request); });
+    r.webServer.on(
+    "/uploadfile", HTTP_POST, [](AsyncWebServerRequest *request) { request->send(200); }, handleUpload);
 
     r.webServer.on("/sendgcode", [&](AsyncWebServerRequest *request)
                    { sendGcode(*request, r.gcodeBuffer, r.operatingMode); });
@@ -393,6 +475,8 @@ void WebServerHooks::setup(Resources &r)
                            "\n" R"(    "/sendgcode":{"args":["gcode"], "example":"gcode=G91", "description":"send <gcode> to controller"},)"
                            "\n" R"(    "/gcodestatus":{"args":[], "example":"", "description":"retrieve the processing status of last gcode"},)"
                            "\n" R"(    "/file":{"args":["name"], "example":"name=test.g", "description":"retrieve the content of file <name> as text/plain, in case of error json as application/json"},)"
+                           "\n" R"(    "/deletefile":{"args":["name"], "example":"name=test.g", "description":"delete a file from filesystem"},)"
+                           "\n" R"(    "/uploadfile":{"args":[""], "example":"", "description":"upload a file to filesystem, method POST"},)"
                            "\n" R"(    "/files":{"args":[], "example":"", "description":"lists content of the top level directory"},)"
                            "\n" R"(    "/runfile":{"args":["name"], "example":"name=test.g", "description":"runs gcode from file <name>"},)"
                            "\n" R"(    "/help":{"args":[], "example":"", "description":"retrieves the api description"})"
