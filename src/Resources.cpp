@@ -5,9 +5,12 @@
 
 Resources::PreInit::PreInit()
 {
+    WiFi.mode(WIFI_OFF);
     Serial.begin(SERIAL_MONITOR_BAUD_RATE, SERIAL_MONITOR_CONFIG, SERIAL_MONITOR_MODE);
     Serial.println("\n\n\n");
     Serial.println("Resources::PreInit::PreInit ...");
+    while(millis() < 125)
+        ;
     Serial.println("Resources::PreInit::PreInit done");
 }
 
