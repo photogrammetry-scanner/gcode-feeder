@@ -232,6 +232,7 @@ void sendGcode(AsyncWebServerRequest &request,
             {
                 Serial.println("buffer gcode='" + gcode + "'");
                 message += " buffered";
+                gcodeBuffer.setGcode(gcode);
             }
             else
             {
