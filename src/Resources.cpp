@@ -3,21 +3,21 @@
 #include <HardwareSerial.h>
 #include <LittleFS.h>
 
-
-Resources::VeryEarlyInit::VeryEarlyInit()
+Resources::PreInit::PreInit()
 {
-    Serial.begin(115200, SERIAL_8N1, SERIAL_FULL);
+    Serial.begin(SERIAL_MONITOR_BAUD_RATE, SERIAL_MONITOR_CONFIG, SERIAL_MONITOR_MODE);
     Serial.println("\n\n\n");
-    Serial.println("Resources::VeryEarlyInit::VeryEarlyInit ...");
-    Serial.println("Resources::VeryEarlyInit::VeryEarlyInit done");
+    Serial.println("Resources::PreInit::PreInit ...");
+    Serial.println("Resources::PreInit::PreInit done");
 }
 
 
-Resources::EarlyInit::EarlyInit(Resources &r)
+Resources::PostInit::PostInit(Resources &r)
 {
-    Serial.println("Resources::EarlyInit::EarlyInit ...");
-    r.cncSerial.begin(115200, SWSERIAL_8N1, D4, D3);
-    Serial.println("Resources::EarlyInit::EarlyInit done");
+    Serial.println("Resources::PostInit::PostInit ...");
+    r.cncSerial.begin(SERIAL_CNC_LINK_BAUD_RATE, SERIAL_CNC_LINK_CONFIG, SERIAL_CNC_LINK_RX_PIN,
+                      SERIAL_CNC_LINK_TX_PIN);
+    Serial.println("Resources::PostInit::PostInit done");
 }
 
 
@@ -30,7 +30,7 @@ void Resources::setup()
     display.screen.init();
     display.screen.setFont(ArialMT_Plain_10);
     display.screen.flipScreenVertically();
-    display.screen.setLogBuffer(5, 14);
+    display.screen.setLogBuffer(6, 14);
     Serial.println("display ready");
 
     Serial.println("wifi init ...");

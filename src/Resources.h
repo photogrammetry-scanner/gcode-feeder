@@ -7,7 +7,7 @@
 #include "OperatingState.h"
 
 // display
-#include "Display.h"
+#include "display/Display.h"
 
 // wifi manager + web server
 #include <DNSServer.h>
@@ -16,39 +16,42 @@
 #include <ESPAsyncWiFiManager.h>
 
 // serial
-#include "LineBufferedStream.h"
+#include "serial/LineBufferedStream.h"
 #include <SoftwareSerial.h>
 
 // gcode
 #include "GcodeBuffer.h"
 #include "GcodeFileRunner.h"
 
+// hardcoded config
+#include "configuration.h"
+
 
 typedef struct Resources
 {
     void setup();
 
-    struct VeryEarlyInit
+    struct PreInit
     {
-        VeryEarlyInit();
-    } _veryEarlyInit = {};
+        PreInit();
+    } _preInit = {};
 
     OperatingState operatingMode{};
 
     DNSServer dnsServer{};
-    AsyncWebServer webServer{ 80 };
+    AsyncWebServer webServer{ WEB_SERVER_PORT_NUMBER };
 
     SoftwareSerial cncSerial{};
     LineBufferedStream cncSerialBuffer{ cncSerial };
 
-    Display display;
+    Display display{};
 
-    GcodeBuffer gcodeBuffer;
+    GcodeBuffer gcodeBuffer{};
     GcodeFileRunner gcodeFileRunner{ gcodeBuffer, operatingMode };
 
-    struct EarlyInit
+    struct PostInit
     {
-        EarlyInit(Resources &r);
-    } _earlyInit = { *this };
+        PostInit(Resources &r);
+    } _postInit = { *this };
 
 } Resources;

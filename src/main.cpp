@@ -98,12 +98,12 @@ struct Firmware : public Resources
 
     void feedGcodeBufferFromFile()
     {
-        static elapsedMillis elapsedTimeMs{ 251 };
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK + 1 };
 
         if(!operatingMode.isState(OperatingState::State::RunningFromFile))
             return;
 
-        if(elapsedTimeMs >= 250)
+        if(elapsedTimeMs >= DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK)
         {
             gcodeFileRunner.process();
             elapsedTimeMs = 0;
@@ -112,12 +112,12 @@ struct Firmware : public Resources
 
     void waitForCncControllerReady()
     {
-        static elapsedMillis elapsedTimeMs{ 501 };
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK + 1 };
 
         if(!operatingMode.isState(OperatingState::State::WaitingForCncController))
             return;
 
-        if(elapsedTimeMs < 500)
+        if(elapsedTimeMs < DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK)
             return;
 
         gcodeBuffer.setGcode("G91");
@@ -136,7 +136,7 @@ struct Firmware : public Resources
 
     void waitForMotionFinished()
     {
-        static elapsedMillis elapsedTimeMs{ 251 };
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_MOTION_FINISHED_CHECK + 1 };
         static uint8_t pendingResponses{ 0 };
 
         if(!gcodeBuffer.isProcessed())
@@ -146,7 +146,7 @@ struct Firmware : public Resources
              operatingMode.isState(OperatingState::State::WaitCommandMotion)))
             return;
 
-        if(elapsedTimeMs <= 250)
+        if(elapsedTimeMs <= DELAY_MS_FOR_MOTION_FINISHED_CHECK)
             return;
         elapsedTimeMs = 0;
 
