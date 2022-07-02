@@ -24,8 +24,6 @@
 
 // ========== section G-code ==========
 
-#define DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK \
-    250 // delay for cyclic check to send next line to CNC controller
-#define DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK \
-    500 // delay for cyclic check to wait for the CNC controller to boot
-#define DELAY_MS_FOR_MOTION_FINISHED_CHECK 250 // delay for cyclic check if last motion has finished
+#define DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK 250     // delay for cyclic check to send next line to CNC controller
+#define DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK 500 // delay for cyclic check to wait for the CNC controller to boot
+#define DELAY_MS_FOR_MOTION_FINISHED_CHECK 250         // delay for cyclic check if last motion has finished

@@ -21,7 +21,7 @@ BreakBeforeTernaryOperators: false
 #BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeColon
 AllowShortBlocksOnASingleLine: true
-ColumnLimit: 100
+ColumnLimit: 120
 CommentPragmas: ''
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 0

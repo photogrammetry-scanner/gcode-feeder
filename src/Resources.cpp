@@ -15,8 +15,7 @@ Resources::PreInit::PreInit()
 Resources::PostInit::PostInit(Resources &r)
 {
     Serial.println("Resources::PostInit::PostInit ...");
-    r.cncSerial.begin(SERIAL_CNC_LINK_BAUD_RATE, SERIAL_CNC_LINK_CONFIG, SERIAL_CNC_LINK_RX_PIN,
-                      SERIAL_CNC_LINK_TX_PIN);
+    r.cncSerial.begin(SERIAL_CNC_LINK_BAUD_RATE, SERIAL_CNC_LINK_CONFIG, SERIAL_CNC_LINK_RX_PIN, SERIAL_CNC_LINK_TX_PIN);
     Serial.println("Resources::PostInit::PostInit done");
 }
 
@@ -48,10 +47,8 @@ void Resources::setup()
     Serial.println("wifi ready");
 
     display.screen.clear();
-    display.screen.drawString(0, Display::L1,
-                              "IP: " + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "...");
-    display.screen.drawString(0, Display::L2,
-                              "..." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]));
+    display.screen.drawString(0, Display::L1, "IP: " + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "...");
+    display.screen.drawString(0, Display::L2, "..." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]));
     display.screen.display();
 
     Serial.println("LittleFS ...");

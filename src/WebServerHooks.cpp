@@ -7,75 +7,73 @@
 void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = "", const String &extra_post_html = "")
 {
     Serial.println("WebServerHooks -> indexHtml");
-    String html{
-        "<!DOCTYPE html>\n"
-        "<html>\n"
-        "  <head>\n"
-        "    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n"
-        "    <title>G-Code Feeder</title>\n"
-        "  </head>\n"
-        "  <body>\n"
-        "    <b>Api Examples</b>\n"
-        "    <table>\n"
-        "      <thead>\n"
-        "        <tr>\n"
-        "          <th align='left'>URL Example</th>\n"
-        "          <th align='left'>Description</th>\n"
-        "          <th align='left'>Arguments</th>\n"
-        "        </tr>\n"
-        "      </thead>\n"
-        "      <tbody id='apiExamples'>\n"
-        "      </tbody>\n"
-        "    </table>\n"
-        "\n"
-        "    <p/>\n"
-        "    <b>Firmware</b>\n"
-        "    <ul>\n"
-        "      <li id='sketchHash'>x</li>\n"
-        "      <li id='sketchSize'>x</li>\n"
-        "    </ul>\n"
-        "\n"
-        "    <form method=\"POST\" action=\"/uploadfile\" enctype=\"multipart/form-data\">\n"
-        "      <input type=\"file\" name=\"data\"/>\n"
-        "      <input type=\"submit\" name=\"upload\" value=\"Upload File\" title=\"Upload "
-        "File\">\n"
-        "    </form>\n"
-        "\n"
-        "    <script>\n"
-        "      fetch('/status')\n"
-        "        .then(response => response.json())\n"
-        "        .then(data => {\n"
-        "          document.querySelector('#sketchHash').innerText = 'hash ' + "
-        "data.message.sketch_md5\n"
-        "          document.querySelector('#sketchSize').innerText = 'size ' + "
-        "data.message.sketch_size_byte\n"
-        "        })\n"
-        "\n"
-        "      fetch('/help')\n"
-        "        .then(response => response.json())\n"
-        "        .then(data => {\n"
-        "          tbody = document.querySelector('#apiExamples')\n"
-        "          for (var example in data.message) {\n"
-        "            var url = example\n"
-        "            var description = data.message[example].description\n"
-        "            var args = data.message[example].args\n"
-        "            var argExample = data.message[example].example\n"
-        "            argExample = argExample ? ('?' + argExample) : ''\n"
-        "            trow = tbody.insertRow()\n"
-        "            a = document.createElement('a')\n"
-        "            a.appendChild(document.createTextNode(url + argExample))\n"
-        "            a.title = url + argExample\n"
-        "            a.href = url + argExample\n"
-        "            trow.insertCell().appendChild(a)\n"
-        "            trow.insertCell().appendChild(document.createTextNode(description))\n"
-        "            trow.insertCell().appendChild(document.createTextNode('[' + args + ']'))\n"
-        "          }\n"
-        "        })\n"
-        "\n"
-        "    </script>\n"
-        "  </body>\n"
-        "</html>"
-    };
+    String html{ "<!DOCTYPE html>\n"
+                 "<html>\n"
+                 "  <head>\n"
+                 "    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n"
+                 "    <title>G-Code Feeder</title>\n"
+                 "  </head>\n"
+                 "  <body>\n"
+                 "    <b>Api Examples</b>\n"
+                 "    <table>\n"
+                 "      <thead>\n"
+                 "        <tr>\n"
+                 "          <th align='left'>URL Example</th>\n"
+                 "          <th align='left'>Description</th>\n"
+                 "          <th align='left'>Arguments</th>\n"
+                 "        </tr>\n"
+                 "      </thead>\n"
+                 "      <tbody id='apiExamples'>\n"
+                 "      </tbody>\n"
+                 "    </table>\n"
+                 "\n"
+                 "    <p/>\n"
+                 "    <b>Firmware</b>\n"
+                 "    <ul>\n"
+                 "      <li id='sketchHash'>x</li>\n"
+                 "      <li id='sketchSize'>x</li>\n"
+                 "    </ul>\n"
+                 "\n"
+                 "    <form method=\"POST\" action=\"/uploadfile\" enctype=\"multipart/form-data\">\n"
+                 "      <input type=\"file\" name=\"data\"/>\n"
+                 "      <input type=\"submit\" name=\"upload\" value=\"Upload File\" title=\"Upload "
+                 "File\">\n"
+                 "    </form>\n"
+                 "\n"
+                 "    <script>\n"
+                 "      fetch('/status')\n"
+                 "        .then(response => response.json())\n"
+                 "        .then(data => {\n"
+                 "          document.querySelector('#sketchHash').innerText = 'hash ' + "
+                 "data.message.sketch_md5\n"
+                 "          document.querySelector('#sketchSize').innerText = 'size ' + "
+                 "data.message.sketch_size_byte\n"
+                 "        })\n"
+                 "\n"
+                 "      fetch('/help')\n"
+                 "        .then(response => response.json())\n"
+                 "        .then(data => {\n"
+                 "          tbody = document.querySelector('#apiExamples')\n"
+                 "          for (var example in data.message) {\n"
+                 "            var url = example\n"
+                 "            var description = data.message[example].description\n"
+                 "            var args = data.message[example].args\n"
+                 "            var argExample = data.message[example].example\n"
+                 "            argExample = argExample ? ('?' + argExample) : ''\n"
+                 "            trow = tbody.insertRow()\n"
+                 "            a = document.createElement('a')\n"
+                 "            a.appendChild(document.createTextNode(url + argExample))\n"
+                 "            a.title = url + argExample\n"
+                 "            a.href = url + argExample\n"
+                 "            trow.insertCell().appendChild(a)\n"
+                 "            trow.insertCell().appendChild(document.createTextNode(description))\n"
+                 "            trow.insertCell().appendChild(document.createTextNode('[' + args + ']'))\n"
+                 "          }\n"
+                 "        })\n"
+                 "\n"
+                 "    </script>\n"
+                 "  </body>\n"
+                 "</html>" };
     /*
         info += "    <li><a href=/sendgcode?line=G91>G91 (relative motion)</a></li>";
         info += "    <li><a href=/sendgcode?line=G1%20X+10%20F2000>G1 X+10 F2000 (move X+)</a></li>";
@@ -89,8 +87,7 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
 
 void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> reboot: " + request.client()->remoteIP().toString() + " -> " +
-                   request.url());
+    Serial.println("WebServerHooks -> reboot: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String info{ "{\n  \"message\":\"reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
     request.send(200, "application/json", info);
@@ -100,8 +97,7 @@ void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 
 void deviceStatus(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> deviceStatus: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> deviceStatus: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String status;
     status += "\n    \"shutdown_reason\":\"";
     status += EspClass::getResetReason().c_str();
@@ -159,8 +155,7 @@ void deviceStatus(AsyncWebServerRequest &request)
 
 void resetWifi(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> resetWifi: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> resetWifi: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String info{ "{\n  \"message\":\"reset wifi settings and reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
     request.send(200, "application/json", info);
@@ -174,8 +169,7 @@ void sendGcode(AsyncWebServerRequest &request,
                const String &extra_pre_html = "",
                const String &extra_post_html = "")
 {
-    Serial.println("WebServerHooks -> sendGcode: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> sendGcode: " + request.client()->remoteIP().toString() + " -> " + request.url());
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
@@ -206,8 +200,8 @@ void sendGcode(AsyncWebServerRequest &request,
             }
             else
             {
-                Serial.println("failed to buffer gcode '" + gcode +
-                               "' while processing other gcode '" + gcodeBuffer.getGcode() + "'");
+                Serial.println("failed to buffer gcode '" + gcode + "' while processing other gcode '" +
+                               gcodeBuffer.getGcode() + "'");
                 message += " not buffered, still processing other gcode '" + gcodeBuffer.getGcode() + "'";
                 requestStatus = "error";
             }
@@ -225,15 +219,13 @@ void sendGcode(AsyncWebServerRequest &request,
         requestStatus = "error";
     }
 
-    request.send(200, "application/json",
-                 "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + requestStatus + "\"\n}");
+    request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + requestStatus + "\"\n}");
 }
 
 
 void listFiles(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> listFiles: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> listFiles: " + request.client()->remoteIP().toString() + " -> " + request.url());
 
     String message;
     String requestStatus{ "ok" };
@@ -291,8 +283,7 @@ void listFiles(AsyncWebServerRequest &request)
 
 void readFile(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> readFile: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> readFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String path = "NA";
 
     if(request.hasArg("name"))
@@ -313,8 +304,7 @@ void readFile(AsyncWebServerRequest &request)
 
 void deleteFile(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks -> deleteFile: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> deleteFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String path = "NA";
 
     if(request.hasArg("name"))
@@ -342,21 +332,18 @@ void deleteFile(AsyncWebServerRequest &request)
         message = "file '" + path + "' deleted";
         Serial.println(message);
     }
-    request.send(200, "application/json",
-                 "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + result + "\"\n}");
+    request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + result + "\"\n}");
 }
 
 
 void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> runFile: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> runFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String path = "NA";
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
-        const String message{ "cannot start processing file while not in idle (" +
-                              operatingMode.toString() + ")" };
+        const String message{ "cannot start processing file while not in idle (" + operatingMode.toString() + ")" };
         Serial.println(message);
         request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
         return;
@@ -383,17 +370,14 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
 
 void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks -> getOperatingMode: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
-    request.send(200, "application/json",
-                 "{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}");
+    Serial.println("WebServerHooks -> getOperatingMode: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    request.send(200, "application/json", "{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}");
 }
 
 
 void getGcodeStatus(AsyncWebServerRequest &request, GcodeBuffer &gcodeBuffer)
 {
-    Serial.println("WebServerHooks -> getGcodeStatus: " + request.client()->remoteIP().toString() +
-                   " -> " + request.url());
+    Serial.println("WebServerHooks -> getGcodeStatus: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String info;
     info += String() + R"("gcode":")" + gcodeBuffer.getGcode() + "\",\n    ";
     info += String() + R"("is_transmitted":")" + gcodeBuffer.isTransmitted() + "\",\n    ";
@@ -409,8 +393,7 @@ void getGcodeStatus(AsyncWebServerRequest &request, GcodeBuffer &gcodeBuffer)
 
 void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
 {
-    Serial.println("WebServerHooks -> handleUplod: " + request->client()->remoteIP().toString() +
-                   " -> " + request->url());
+    Serial.println("WebServerHooks -> handleUplod: " + request->client()->remoteIP().toString() + " -> " + request->url());
 
     if(!index)
     {
@@ -439,11 +422,9 @@ void WebServerHooks::setup(Resources &r)
     r.webServer.reset();
 
     r.webServer.on("/", [](AsyncWebServerRequest *request) { indexHtml(*request); });
-    r.webServer.on("/reboot",
-                   [&](AsyncWebServerRequest *request) { reboot(*request, r.operatingMode); });
+    r.webServer.on("/reboot", [&](AsyncWebServerRequest *request) { reboot(*request, r.operatingMode); });
     r.webServer.on("/status", [](AsyncWebServerRequest *request) { deviceStatus(*request); });
-    r.webServer.on("/resetwifi",
-                   [&](AsyncWebServerRequest *request) { resetWifi(*request, r.operatingMode); });
+    r.webServer.on("/resetwifi", [&](AsyncWebServerRequest *request) { resetWifi(*request, r.operatingMode); });
 
     r.webServer.on("/files", [&](AsyncWebServerRequest *request) { listFiles(*request); });
     r.webServer.on("/file", [&](AsyncWebServerRequest *request) { readFile(*request); });
@@ -451,15 +432,13 @@ void WebServerHooks::setup(Resources &r)
     r.webServer.on(
     "/uploadfile", HTTP_POST, [](AsyncWebServerRequest *request) { request->send(200); }, handleUpload);
 
-    r.webServer.on("/sendgcode", [&](AsyncWebServerRequest *request)
-                   { sendGcode(*request, r.gcodeBuffer, r.operatingMode); });
-    r.webServer.on("/runfile", [&](AsyncWebServerRequest *request)
-                   { runFile(*request, r.gcodeFileRunner, r.operatingMode); });
-    r.webServer.on("/operatingmode", [&](AsyncWebServerRequest *request)
-                   { getOperatingMode(*request, r.operatingMode); });
+    r.webServer.on("/sendgcode",
+                   [&](AsyncWebServerRequest *request) { sendGcode(*request, r.gcodeBuffer, r.operatingMode); });
+    r.webServer.on("/runfile",
+                   [&](AsyncWebServerRequest *request) { runFile(*request, r.gcodeFileRunner, r.operatingMode); });
+    r.webServer.on("/operatingmode", [&](AsyncWebServerRequest *request) { getOperatingMode(*request, r.operatingMode); });
 
-    r.webServer.on("/gcodestatus",
-                   [&](AsyncWebServerRequest *request) { getGcodeStatus(*request, r.gcodeBuffer); });
+    r.webServer.on("/gcodestatus", [&](AsyncWebServerRequest *request) { getGcodeStatus(*request, r.gcodeBuffer); });
 
     r.webServer.on(
     "/help",
@@ -487,7 +466,5 @@ void WebServerHooks::setup(Resources &r)
 
     r.webServer.onNotFound(
     [](AsyncWebServerRequest *request)
-    {
-        request->send(404, "application/json", "{\n  \"message\":\"URL not found\",\n  \"request\":\"error\"\n}");
-    });
+    { request->send(404, "application/json", "{\n  \"message\":\"URL not found\",\n  \"request\":\"error\"\n}"); });
 }

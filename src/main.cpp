@@ -25,8 +25,7 @@ struct Firmware : public Resources
             else
                 Serial.println("received unexpected cnc response '" + line + "'");
 
-            if(operatingMode.isState(OperatingState::State::Idle) ||
-               operatingMode.isState(OperatingState::State::RunningFromFile))
+            if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
                 display.screen.drawString(0, Display::L3, gcodeBuffer.getResponse());
                 display.screen.display();
@@ -38,8 +37,7 @@ struct Firmware : public Resources
                                "' is erroneous (code=" + gcodeBuffer.getErrorCode() + "), retransmit line");
                 if(subsequentErrors >= allowedSubsequentErrors)
                 {
-                    Serial.println(String() + "error: too many erroneous responses (" +
-                                   subsequentErrors + "), aborting");
+                    Serial.println(String() + "error: too many erroneous responses (" + subsequentErrors + "), aborting");
                     subsequentErrors = 0;
                     operatingMode.switchState(OperatingState::State::WaitingForCncController);
                 }
@@ -82,8 +80,7 @@ struct Firmware : public Resources
         if(!gcodeBuffer.isProcessed() && !gcodeBuffer.isTransmitted())
         {
             Serial.println("send gcode='" + gcodeBuffer.getGcode() + "'");
-            if(operatingMode.isState(OperatingState::State::Idle) ||
-               operatingMode.isState(OperatingState::State::RunningFromFile))
+            if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
                 display.screen.clear();
                 display.screen.drawString(0, Display::L1, "gcode->cnc");
