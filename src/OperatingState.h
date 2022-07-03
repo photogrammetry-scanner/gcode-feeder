@@ -16,6 +16,7 @@ struct OperatingState
         PausedFromFile,                // on pause request while processing file
         FinishedFromFile,              // intermediate state before returning to idle
         DoResetWifi,                   // on reset wifi request
+        HaltOnError,                   // halt system due to error
         DoReboot,                      // on reboot request
         Invalid,                       // no state, must not occur
     };

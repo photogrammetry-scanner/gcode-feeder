@@ -41,6 +41,8 @@ std::string OperatingState::toString(OperatingState::State s)
         return "Invalid";
     case State::DoResetWifi:
         return "DoResetWifi";
+    case State::HaltOnError:
+        return "HaltOnError";
     case State::DoReboot:
         return "DoReboot";
     default:

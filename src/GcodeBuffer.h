@@ -10,7 +10,7 @@ typedef struct GcodeBuffer
     void setGcode(const std::string &gcode);
     void setResponse(const std::string &response);
     void setTransmitted(bool isTransmitted = true);
-    void setResponseReceived(bool isReceived = true);
+    // void setResponseReceived(bool isReceived = true);
     void setMotionFinished(bool isFinished = true);
     void reset();
     bool isProcessed() const;
@@ -18,6 +18,7 @@ typedef struct GcodeBuffer
     bool isResponseOk() const;
     bool isMotionFinished() const;
     int16_t getErrorCode() const;
+    std::string toString() const;
 
 protected:
     std::string gcode;

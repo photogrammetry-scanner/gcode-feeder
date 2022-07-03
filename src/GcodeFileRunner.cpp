@@ -15,7 +15,7 @@ void GcodeFileRunner::tryBufferNextLine()
 {
     if(file && !operatingMode.isState(OperatingState::State::RunningFromFile))
     {
-        Serial.println(std::string(std::to_string(millis()) + " close file '" + std::string(file.name()) + "'").c_str());
+        Serial.println(std::string(std::to_string(millis()) + " close file '" + file.name() + "'").c_str());
         currentLine = 0;
         file.close();
     }
@@ -26,14 +26,14 @@ void GcodeFileRunner::tryBufferNextLine()
         file = LittleFS.open(filePath.c_str(), "r");
         if(file.isDirectory())
         {
-            Serial.println(std::string(std::to_string(millis()) + " file '" + std::string(file.name()) + "' is a directory, closing file")
-                           .c_str());
+            Serial.println(
+            std::string(std::to_string(millis()) + " file '" + file.name() + "' is a directory, closing file").c_str());
             file.close();
         }
         else
         {
-            Serial.println(std::string(std::to_string(millis()) + " gcode file '" + std::string(file.name()) + "' opened for processing")
-                           .c_str());
+            Serial.println(
+            std::string(std::to_string(millis()) + " gcode file '" + file.name() + "' opened for processing").c_str());
         }
     }
 
@@ -41,17 +41,21 @@ void GcodeFileRunner::tryBufferNextLine()
     {
         if(file.available())
         {
-            gcodeBuffer.setGcode(file.readStringUntil('\n').c_str());
+            const std::string line{ file.readStringUntil('\n').c_str() };
             currentLine++;
-            Serial.println(std::string(std::to_string(millis()) + " processing line " + std::to_string(currentLine) +
-                                       ": '" + gcodeBuffer.getGcode() + "'")
-                           .c_str());
+            if(line.starts_with(';') || line.length() == 0)
+                ; // skip comments and empty lines
+            else
+                gcodeBuffer.setGcode(line);
+            Serial.println(
+            std::string(std::to_string(millis()) + " " + file.name() + ":" + std::to_string(currentLine) + ": '" + line + "'")
+            .c_str());
         }
         else
         {
-            Serial.println(std::string(std::to_string(millis()) + " file '" + std::string(file.name()) + "' processed").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " file '" + file.name() + "' processed").c_str());
             operatingMode.switchState(OperatingState::State::FinishedFromFile);
-            Serial.println(std::string(std::to_string(millis()) + " close file '" + std::string(file.name()) + "'").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " close file '" + file.name() + "'").c_str());
             currentLine = 0;
             file.close();
             operatingMode.switchState(OperatingState::State::Idle);

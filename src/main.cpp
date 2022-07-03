@@ -8,7 +8,7 @@ struct Firmware : public Resources
 {
     void handleBufferedCncReception()
     {
-        const uint8_t allowedSubsequentErrors{ 4 };
+        const uint8_t allowedSubsequentErrors{ 12 };
 
         if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished) ||
            operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
@@ -44,11 +44,14 @@ struct Firmware : public Resources
                                                std::to_string(subsequentErrors) + "), aborting")
                                    .c_str());
                     subsequentErrors = 0;
-                    operatingMode.switchState(OperatingState::State::WaitingForCncControllerReady);
+                    operatingMode.switchState(OperatingState::State::HaltOnError);
                 }
-                subsequentErrors++;
-                gcodeBuffer.setTransmitted(false);
-                gcodeBuffer.setResponseReceived(false);
+                else
+                {
+                    subsequentErrors++;
+                    const std::string gcode{ gcodeBuffer.getGcode() };
+                    gcodeBuffer.setGcode(gcode);
+                }
             }
             else // response OK
             {
@@ -133,6 +136,7 @@ struct Firmware : public Resources
         if(gcodeBuffer.isResponseOk())
         {
             operatingMode.switchState(OperatingState::State::Idle);
+            cncSerialBuffer.clear();
         }
 
         elapsedTimeMs = 0;
@@ -217,8 +221,22 @@ struct Firmware : public Resources
     void fetchPendingBytesFromCncSerial() { cncSerialBuffer.read(); }
 
 
+    void handleHaltStates()
+    {
+        if(operatingMode.isState(OperatingState::State::HaltOnError))
+        {
+            cncSerial.write("Q");
+            while(true)
+            {
+                Serial.println(std::string(std::to_string(millis()) + " firmware halted").c_str());
+                ESP.deepSleep(ESP.deepSleepMax());
+            }
+        }
+    }
+
     void process()
     {
+        handleHaltStates();
         fetchPendingBytesFromCncSerial();
         handleStateWaitForCncControllerReady();
 

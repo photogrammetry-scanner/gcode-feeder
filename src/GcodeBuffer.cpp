@@ -1,6 +1,6 @@
 #if !defined(ENV_NATIVE)
 #include "GcodeBuffer.h"
-
+#include <HardwareSerial.h>
 
 void GcodeBuffer::reset()
 {
@@ -22,6 +22,7 @@ void GcodeBuffer::setTransmitted(bool isTransmitted)
 {
     gcodeTransmitted = isTransmitted;
     motionFinished = false;
+    Serial.println(std::string(std::to_string(millis()) + " GcodeBuffer::setTransmitted:   " + toString() + "").c_str());
 }
 
 
@@ -29,6 +30,7 @@ void GcodeBuffer::setGcode(const std::string &g)
 {
     reset();
     gcode = g;
+    Serial.println(std::string(std::to_string(millis()) + " GcodeBuffer::setGcode:         " + toString() + "").c_str());
 }
 
 
@@ -36,6 +38,7 @@ void GcodeBuffer::setResponse(const std::string &r)
 {
     response = r;
     responseReceived = true;
+    Serial.println(std::string(std::to_string(millis()) + " GcodeBuffer::setResponse:      " + toString() + "").c_str());
 }
 
 
@@ -82,12 +85,38 @@ int16_t GcodeBuffer::getErrorCode() const
 }
 
 
-void GcodeBuffer::setResponseReceived(bool isReceived) { responseReceived = isReceived; }
-
+/*
+void GcodeBuffer::setResponseReceived(bool isReceived)
+{
+    responseReceived = isReceived;
+    if(!responseReceived)
+        response = "";
+    Serial.println(std::string(std::to_string(millis()) + " GcodeBuffer::setResponseReceived: " + toString() + "").c_str());
+}
+*/
 
 bool GcodeBuffer::isMotionFinished() const { return motionFinished; }
 
 
-void GcodeBuffer::setMotionFinished(bool isFinished) { motionFinished = isFinished; }
+void GcodeBuffer::setMotionFinished(bool isFinished)
+{
+    motionFinished = isFinished;
+    Serial.println(std::string(std::to_string(millis()) + " GcodeBuffer::isMotionFinished: " + toString() + "").c_str());
+}
+
+
+std::string GcodeBuffer::toString() const
+{
+    // clang-format off
+    return std::string
+    {
+        "TX="  + std::string(gcodeTransmitted ? "yes" : "no ") + " " +
+        "RX="  + std::string(responseReceived ? "yes" : "no ") + " " +
+        "MvFin=" + std::string(motionFinished ? "yes" : "no ") + " " +
+        "G='"   + gcode    + "' " +
+        "Rsp='" + response + "'"
+    };
+    // clang-format on
+}
 
 #endif

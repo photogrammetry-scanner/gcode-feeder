@@ -4,15 +4,21 @@
 #include <HardwareSerial.h>
 #include <LittleFS.h>
 
+#define xstr(s) str(s)
+#define str(s) #s
+
 Resources::PreInit::PreInit()
 {
     WiFi.mode(WIFI_OFF);
     Serial.begin(SERIAL_MONITOR_BAUD_RATE, SERIAL_MONITOR_CONFIG, SERIAL_MONITOR_MODE);
     Serial.println("\n\n\n");
     Serial.println(std::string(std::to_string(millis()) + " Resources::PreInit::PreInit ...").c_str());
+    Serial.println(std::string(std::to_string(millis()) + " initialized hardware-serial: baud=" + xstr(SERIAL_MONITOR_BAUD_RATE) +
+                               ", config=" + xstr(SERIAL_MONITOR_CONFIG) + ", mode=" + xstr(SERIAL_MONITOR_MODE))
+                   .c_str());
     while(millis() < 125)
         ;
-    Serial.println("Resources::PreInit::PreInit done");
+    Serial.println(std::string(std::to_string(millis()) + " Resources::PreInit::PreInit done").c_str());
 }
 
 
@@ -20,6 +26,10 @@ Resources::PostInit::PostInit(Resources &r)
 {
     Serial.println(std::string(std::to_string(millis()) + " Resources::PostInit::PostInit ...").c_str());
     r.cncSerial.begin(SERIAL_CNC_LINK_BAUD_RATE, SERIAL_CNC_LINK_CONFIG, SERIAL_CNC_LINK_RX_PIN, SERIAL_CNC_LINK_TX_PIN);
+    Serial.println(std::string(std::to_string(millis()) + " initialized cnc controller software-serial: baud=" +
+                               xstr(SERIAL_CNC_LINK_BAUD_RATE) + ", config=" + xstr(SERIAL_CNC_LINK_CONFIG) +
+                               ", rx_pin=" + xstr(SERIAL_CNC_LINK_RX_PIN) + ", tx_pin=" + xstr(SERIAL_CNC_LINK_TX_PIN))
+                   .c_str());
     Serial.println(std::string(std::to_string(millis()) + " Resources::PostInit::PostInit done").c_str());
 }
 

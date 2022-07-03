@@ -29,12 +29,20 @@ Prerequisites:
 3. OLED shield
 4. wireless LAN
 
-Bild and flash:
+Bild / test / flash:
 
 ```bash
-pio run --target uploadfs
-pio run --target upload
+# unit tests
+platformio test --environment native
+
+# build + flash gcode feeder (this repository)
+platformio run --environment d1 --target uploadfs
+platformio run --environment d1 --target upload
 pio device monitor
+
+# build + flash grbl (repository: https://github.com/photogrammetry-scanner/grbl)
+make all
+avrdude -c arduino -P /dev/ttyACM0 -p atmega328p -B 10 -F -U flash:w:grbl.hex:i
 ```
 
 On first installation the wireless manager will open an access point with captive portal to configure the
