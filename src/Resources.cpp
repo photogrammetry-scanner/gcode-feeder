@@ -51,8 +51,11 @@ void Resources::setup()
     Serial.println("wifi ready");
 
     display.screen.clear();
-    display.screen.drawString(0, Display::L1, "IP: " + String(WiFi.localIP()[0]) + "." + String(WiFi.localIP()[1]) + "...");
-    display.screen.drawString(0, Display::L2, "..." + String(WiFi.localIP()[2]) + "." + String(WiFi.localIP()[3]));
+    display.screen.drawString(
+    0, Display::L1,
+    std::string("IP: " + std::to_string(WiFi.localIP()[0]) + "." + std::to_string(WiFi.localIP()[1]) + "...").c_str());
+    display.screen.drawString(
+    0, Display::L2, std::string("..." + std::to_string(WiFi.localIP()[2]) + "." + std::to_string(WiFi.localIP()[3])).c_str());
     display.screen.display();
 
     Serial.println("LittleFS ...");

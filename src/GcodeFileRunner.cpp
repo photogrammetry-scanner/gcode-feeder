@@ -3,7 +3,6 @@
 #include "GcodeBuffer.h"
 #include "OperatingState.h"
 #include <LittleFS.h>
-#include <WString.h>
 
 
 GcodeFileRunner::GcodeFileRunner(GcodeBuffer &buffer, OperatingState &opMode)
@@ -14,27 +13,25 @@ GcodeFileRunner::GcodeFileRunner(GcodeBuffer &buffer, OperatingState &opMode)
 
 void GcodeFileRunner::process()
 {
-    static String line;
-
     if(file && !operatingMode.isState(OperatingState::State::RunningFromFile))
     {
-        Serial.println(String() + "close file '" + file.name() + "'");
+        Serial.println(std::string("close file '" + std::string(file.name()) + "'").c_str());
         currentLine = 0;
         file.close();
     }
 
     if(!file)
     {
-        Serial.println("gcode file '" + filePath + "' not opened");
-        file = LittleFS.open(filePath, "r");
+        Serial.println(std::string("gcode file '" + filePath + "' not opened").c_str());
+        file = LittleFS.open(filePath.c_str(), "r");
         if(file.isDirectory())
         {
-            Serial.println(String() + "file '" + file.name() + "' is a directory, closing file");
+            Serial.println(std::string("file '" + std::string(file.name()) + "' is a directory, closing file").c_str());
             file.close();
         }
         else
         {
-            Serial.println(String() + "gcode file '" + file.name() + "' opened for processing");
+            Serial.println(std::string("gcode file '" + std::string(file.name()) + "' opened for processing").c_str());
         }
     }
 
@@ -42,15 +39,16 @@ void GcodeFileRunner::process()
     {
         if(file.available())
         {
-            gcodeBuffer.setGcode(file.readStringUntil('\n'));
+            gcodeBuffer.setGcode(file.readStringUntil('\n').c_str());
             currentLine++;
-            Serial.println(String() + "processing line " + currentLine + ": '" + gcodeBuffer.getGcode() + "'");
+            Serial.println(
+            std::string("processing line " + std::to_string(currentLine) + ": '" + gcodeBuffer.getGcode() + "'").c_str());
         }
         else
         {
-            Serial.println(String() + "file '" + file.name() + "' processed");
+            Serial.println(std::string("file '" + std::string(file.name()) + "' processed").c_str());
             operatingMode.switchState(OperatingState::State::FinishedFromFile);
-            Serial.println(String() + "close file '" + file.name() + "'");
+            Serial.println(std::string("close file '" + std::string(file.name()) + "'").c_str());
             currentLine = 0;
             file.close();
             operatingMode.switchState(OperatingState::State::Idle);
@@ -67,7 +65,7 @@ void GcodeFileRunner::reset()
 }
 
 
-bool GcodeFileRunner::setFilepath(const String &path)
+bool GcodeFileRunner::setFilepath(const std::string &path)
 {
     if(file)
     {

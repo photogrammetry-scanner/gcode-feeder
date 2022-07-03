@@ -1,14 +1,14 @@
 #pragma once
 #if !defined(ENV_NATIVE)
-#include <WString.h>
+#include <string>
 
 
 typedef struct GcodeBuffer
 {
-    const String &getGcode() const;
-    const String &getResponse() const;
-    void setGcode(const String &gcode);
-    void setResponse(const String &response);
+    const std::string &getGcode() const;
+    const std::string &getResponse() const;
+    void setGcode(const std::string &gcode);
+    void setResponse(const std::string &response);
     void setTransmitted(bool isTransmitted = true);
     void setResponseReceived(bool isReceived = true);
     void setMotionFinished(bool isFinished = true);
@@ -20,8 +20,8 @@ typedef struct GcodeBuffer
     int16_t getErrorCode() const;
 
 protected:
-    String gcode;
-    String response;
+    std::string gcode;
+    std::string response;
     bool gcodeTransmitted{ false };
     bool responseReceived{ false };
     bool motionFinished{ true };

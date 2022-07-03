@@ -1,6 +1,5 @@
 #if !defined(ENV_NATIVE)
 #include "GcodeBuffer.h"
-#include <stdio.h>
 
 
 void GcodeBuffer::reset()
@@ -26,54 +25,53 @@ void GcodeBuffer::setTransmitted(bool isTransmitted)
 }
 
 
-void GcodeBuffer::setGcode(const String &g)
+void GcodeBuffer::setGcode(const std::string &g)
 {
     reset();
     gcode = g;
 }
 
 
-void GcodeBuffer::setResponse(const String &r)
+void GcodeBuffer::setResponse(const std::string &r)
 {
     response = r;
     responseReceived = true;
 }
 
 
-const String &GcodeBuffer::getGcode() const { return gcode; }
+const std::string &GcodeBuffer::getGcode() const { return gcode; }
 
 
-const String &GcodeBuffer::getResponse() const { return response; }
+const std::string &GcodeBuffer::getResponse() const { return response; }
 
-#include <HardwareSerial.h>
 
 bool GcodeBuffer::isResponseOk() const
 {
-    String r{ response };
+    std::string r{ response };
 
-    auto index = r.indexOf('\r');
-    if(index >= 0)
-        r.remove(index);
+    auto index = r.find('\r');
+    if((index != std::string::npos) && (index > 0))
+        r.erase(index);
 
-    index = r.indexOf('\n');
-    if(index >= 0)
-        r.remove(index);
+    index = r.find('\n');
+    if((index != std::string::npos) && (index > 0))
+        r.erase(index);
 
-    return 0 == r.compareTo("ok");
+    return "ok" == r;
 }
 
 
 int16_t GcodeBuffer::getErrorCode() const
 {
-    String r{ response };
+    std::string r{ response };
 
-    auto index = r.indexOf('\r');
-    if(index >= 0)
-        r.remove(index);
+    auto index = r.find('\r');
+    if((index != std::string::npos) && (index > 0))
+        r.erase(index);
 
-    index = r.indexOf('\n');
-    if(index >= 0)
-        r.remove(index);
+    index = r.find('\n');
+    if((index != std::string::npos) && (index > 0))
+        r.erase(index);
 
     int16_t code{ 0 };
 

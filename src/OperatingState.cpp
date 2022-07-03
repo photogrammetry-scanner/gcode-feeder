@@ -5,16 +5,16 @@
 bool OperatingState::switchState(OperatingState::State newState)
 {
     bool hasSwitched{ currentState != newState };
-    Serial.println("switch operating state: " + toString(currentState) + " -> " + toString(newState));
+    Serial.println(std::string("switch operating state: " + toString(currentState) + " -> " + toString(newState)).c_str());
     currentState = newState;
     return hasSwitched;
 }
 
 
-String OperatingState::toString() { return toString(currentState); }
+std::string OperatingState::toString() { return toString(currentState); }
 
 
-String OperatingState::toString(OperatingState::State s)
+std::string OperatingState::toString(OperatingState::State s)
 {
     switch(s)
     {

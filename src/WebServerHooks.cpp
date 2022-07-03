@@ -3,12 +3,12 @@
 #include "FS.h"
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
-#include <WString.h>
+#include <string>
 
 void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = "", const String &extra_post_html = "")
 {
     Serial.println("WebServerHooks -> indexHtml");
-    String html{
+    std::string html{
         "<!DOCTYPE html>\n"
         "<html>\n"
         "  <head>\n"
@@ -111,14 +111,14 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
         "      function getDistance() { return parseFloat(document.getElementById('distance_mm').value) }\n"
         "\n"
         "      function moveX(positive_direction) {\n"
-        "        var f = (positive_direction) ? getFeedRate() : -getFeedRate()\n"
-        "        var d = getDistance()\n"
+        "        var d = (positive_direction) ? getDistance() : -getDistance()\n"
+        "        var f = getFeedRate()\n"
         "        fetch('/api/gcode/send?gcode=G1 F' + f + ' X' + d)\n"
         "      }\n"
         "\n"
         "      function moveZ(positive_direction) {\n"
-        "        var f = (positive_direction) ? getFeedRate() : -getFeedRate()\n"
-        "        var d = getDistance()\n"
+        "        var d = (positive_direction) ? getDistance() : -getDistance()\n"
+        "        var f = getFeedRate()\n"
         "        fetch('/api/gcode/send?gcode=G1 F' + f + ' Z' + d)\n"
         "      }\n"
         "\n"
@@ -129,16 +129,16 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
         "  </body>\n"
         "</html>"
     };
-    request.send(200, "text/html", html);
+    request.send(200, "text/html", html.c_str());
 }
 
 
 void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
     Serial.println("WebServerHooks::reboot: " + request.client()->remoteIP().toString() + " -> " + request.url());
-    String info{ "{\n  \"message\":\"reboot\",\n" };
+    std::string info{ "{\n  \"message\":\"reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
-    request.send(200, "application/json", info);
+    request.send(200, "application/json", info.c_str());
     operatingMode.switchState(OperatingState::State::DoReboot);
 }
 
@@ -221,36 +221,37 @@ void sendGcode(AsyncWebServerRequest &request,
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
-        Serial.println("cannot accept gcode via http while not in idle (" + operatingMode.toString() + ")");
-        String error{ "{" };
+        Serial.println(std::string("cannot accept gcode via http while not in idle (" + operatingMode.toString() + ")").c_str());
+        std::string error{ "{" };
         error += "\n  \"message\":\"cannot accept gcode via http while not in idle,"
                  " current mode is " +
                  operatingMode.toString() + "\",";
         error += "\n  \"request\":\"error\"";
         error += "}";
-        request.send(200, "application/json", error);
+        request.send(200, "application/json", error.c_str());
         return;
     }
 
-    String message;
-    String requestStatus{ "ok" };
+    std::string message;
+    std::string requestStatus{ "ok" };
     if(request.hasParam("gcode"))
     {
         if(request.hasArg("gcode"))
         {
-            String gcode{ request.getParam("gcode")->value() };
-            message += "gcode='" + gcode + "'";
+            std::string gcode{ request.getParam("gcode")->value().c_str() };
+            message += std::string("gcode='" + gcode + "'");
 
             if(gcodeBuffer.isProcessed())
             {
-                Serial.println("buffer gcode='" + gcode + "'");
+                Serial.println(std::string("buffer gcode='" + gcode + "'").c_str());
                 message += " buffered";
                 gcodeBuffer.setGcode(gcode);
             }
             else
             {
-                Serial.println("failed to buffer gcode '" + gcode + "' while processing other gcode '" +
-                               gcodeBuffer.getGcode() + "'");
+                Serial.println(std::string("failed to buffer gcode '" + gcode + "' while processing other gcode '" +
+                                           gcodeBuffer.getGcode() + "'")
+                               .c_str());
                 message += " not buffered, still processing other gcode '" + gcodeBuffer.getGcode() + "'";
                 requestStatus = "error";
             }
@@ -259,7 +260,7 @@ void sendGcode(AsyncWebServerRequest &request,
         {
             message = "failed to retrieve value of argument 'gcode' from http request";
             requestStatus = "error";
-            Serial.println(message);
+            Serial.println(message.c_str());
         }
     }
     else
@@ -268,7 +269,8 @@ void sendGcode(AsyncWebServerRequest &request,
         requestStatus = "error";
     }
 
-    request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + requestStatus + "\"\n}");
+    request.send(200, "application/json",
+                 std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + requestStatus + "\"\n}").c_str());
 }
 
 
@@ -276,51 +278,52 @@ void listFiles(AsyncWebServerRequest &request)
 {
     Serial.println("WebServerHooks::listFiles: " + request.client()->remoteIP().toString() + " -> " + request.url());
 
-    String message;
-    String requestStatus{ "ok" };
+    std::string message;
 
-    const String path = "/";
-    File root = LittleFS.open(path, "r");
+    const std::string path = "/";
+    File root = LittleFS.open(path.c_str(), "r");
     if(!root)
     {
         message = "failed to open directory";
-        Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        Serial.println(message.c_str());
+        request.send(200, "application/json",
+                     std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
     }
     if(!root.isDirectory())
     {
         message = "'" + path + "' is not a directory";
-        Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        Serial.println(message.c_str());
+        request.send(200, "application/json",
+                     std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
     }
 
     File file = root.openNextFile();
-    String isFirstItem{ true };
+    bool isFirstItem{ true };
     while(file)
     {
-        String type{ file.isDirectory() ? "dir" : "file" };
-        String fileSize{ file.isDirectory() ? "0" : String(file.size()) };
+        std::string type{ file.isDirectory() ? "dir" : "file" };
+        std::string fileSize{ file.isDirectory() ? "0" : std::to_string(file.size()) };
         const time_t t = file.getLastWrite();
         const struct tm *ts = localtime(&t);
 
         if(isFirstItem)
         {
             isFirstItem = false;
-            message += String() + "\n    \"" + file.name() + "\":{\n  ";
+            message += "\n    \"" + std::string(file.name()) + "\":{\n  ";
         }
         else
-            message += String() + ",\n    \"" + file.name() + "\":{\n";
+            message += ",\n    \"" + std::string(file.name()) + "\":{\n";
 
-        message += String() + R"(      "type":")" + type + "\",\n";
-        message += String() + R"(      "year":")" + String((ts->tm_year) + 1900) + "\",\n";
-        message += String() + R"(      "month":")" + String(ts->tm_mon + 1) + "\",\n";
-        message += String() + R"(      "day":")" + String(ts->tm_mday) + "\",\n";
-        message += String() + R"(      "hour":")" + String(ts->tm_hour) + "\",\n";
-        message += String() + R"(      "minute":")" + String(ts->tm_min) + "\",\n";
-        message += String() + R"(      "second":")" + String(ts->tm_sec) + "\",\n";
-        message += String() + R"(      "size_byte":")" + fileSize + "\"\n";
+        message += R"(      "type":")" + type + "\",\n";
+        message += R"(      "year":")" + std::to_string((ts->tm_year) + 1900) + "\",\n";
+        message += R"(      "month":")" + std::to_string(ts->tm_mon + 1) + "\",\n";
+        message += R"(      "day":")" + std::to_string(ts->tm_mday) + "\",\n";
+        message += R"(      "hour":")" + std::to_string(ts->tm_hour) + "\",\n";
+        message += R"(      "minute":")" + std::to_string(ts->tm_min) + "\",\n";
+        message += R"(      "second":")" + std::to_string(ts->tm_sec) + "\",\n";
+        message += R"(      "size_byte":")" + fileSize + "\"\n";
         message += "    }";
 
         file = root.openNextFile();
@@ -329,7 +332,7 @@ void listFiles(AsyncWebServerRequest &request)
             message += ',';
     }
 
-    request.send(200, "application/json", "{\n  \"message\":{" + message + "},\n  \"request\":\"ok\"\n}");
+    request.send(200, "application/json", std::string("{\n  \"message\":{" + message + "},\n  \"request\":\"ok\"\n}").c_str());
 }
 
 
@@ -391,55 +394,58 @@ void deleteFile(AsyncWebServerRequest &request)
 void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, OperatingState &operatingMode)
 {
     Serial.println("WebServerHooks::runFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
-    String path = "NA";
+    std::string path = "NA";
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
-        const String message{ "cannot start processing file while not in idle (" + operatingMode.toString() + ")" };
-        Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        const std::string message{ "cannot start processing file while not in idle (" + operatingMode.toString() + ")" };
+        Serial.println(message.c_str());
+        request.send(200, "application/json",
+                     std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
     }
 
     if(request.hasArg("name"))
-        path = request.getParam("name")->value();
+        path = request.getParam("name")->value().c_str();
 
-    if(!LittleFS.exists(path))
+    if(!LittleFS.exists(path.c_str()))
     {
-        const String message{ "failed to start processing file '" + path + "', file does not exist" };
-        Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        const std::string message{ "failed to start processing file '" + path + "', file does not exist" };
+        Serial.println(message.c_str());
+        request.send(200, "application/json",
+                     std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
     }
 
     fileRunner.reset();
     fileRunner.setFilepath(path);
     operatingMode.switchState(OperatingState::State::RunningFromFile);
-    const String message{ "start processing file '" + path + "'" };
-    request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"ok\"\n}");
+    const std::string message{ "start processing file '" + path + "'" };
+    request.send(200, "application/json", std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"ok\"\n}").c_str());
 }
 
 
 void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
     Serial.println("WebServerHooks::getOperatingMode: " + request.client()->remoteIP().toString() + " -> " + request.url());
-    request.send(200, "application/json", "{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}");
+    request.send(200, "application/json",
+                 std::string("{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}").c_str());
 }
 
 
 void getGcodeStatus(AsyncWebServerRequest &request, const GcodeBuffer &gcodeBuffer)
 {
     Serial.println("WebServerHooks::getGcodeStatus: " + request.client()->remoteIP().toString() + " -> " + request.url());
-    String info;
-    info += String() + R"("gcode":")" + gcodeBuffer.getGcode() + "\",\n    ";
-    info += String() + R"("is_transmitted":")" + gcodeBuffer.isTransmitted() + "\",\n    ";
-    info += String() + R"("is_processed":")" + gcodeBuffer.isProcessed() + "\",\n    ";
-    info += String() + R"("response_string":")" + gcodeBuffer.getResponse() + "\",\n    ";
-    info += String() + R"("is_response_ok":")" + gcodeBuffer.isResponseOk() + "\",\n    ";
-    info += String() + R"("response_error_code":")" + gcodeBuffer.getErrorCode() + "\",\n    ";
-    info += String() + R"("is_motion_finished":")" + gcodeBuffer.isMotionFinished() + "\"  ";
+    std::string info;
+    info += std::string(+R"("gcode":")" + gcodeBuffer.getGcode() + "\",\n    ");
+    info += std::string(+R"("is_transmitted":")" + std::string(gcodeBuffer.isTransmitted() ? "true" : "false") + "\",\n    ");
+    info += std::string(+R"("is_processed":")" + std::string(gcodeBuffer.isProcessed() ? "true" : "false") + "\",\n    ");
+    info += std::string(+R"("response_string":")" + gcodeBuffer.getResponse() + "\",\n    ");
+    info += std::string(+R"("is_response_ok":")" + std::string(gcodeBuffer.isResponseOk() ? "true" : "false") + "\",\n    ");
+    info += std::string(+R"("response_error_code":")" + std::to_string(gcodeBuffer.getErrorCode()) + "\",\n    ");
+    info += std::string(+R"("is_motion_finished":")" + std::string(gcodeBuffer.isMotionFinished() ? "true" : "false") + "\"  ");
 
-    request.send(200, "application/json", "{\n  \"message\":{\n    " + info + "},\n  \"request\":\"ok\"\n}");
+    request.send(200, "application/json", std::string("{\n  \"message\":{\n    " + info + "},\n  \"request\":\"ok\"\n}").c_str());
 }
 
 
@@ -462,7 +468,7 @@ void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t
     if(final)
     {
         request->_tempFile.close();
-        Serial.println("upload '" + String(filename) + "' completed, size=" + String(index + len));
+        Serial.println("upload '" + filename + "' completed, size=" + String(index + len));
         request->redirect("/");
     }
 }

@@ -1,6 +1,6 @@
 #pragma once
 #if !defined(ENV_NATIVE)
-#include <WString.h>
+#include <string>
 
 struct OperatingState
 {
@@ -21,8 +21,8 @@ struct OperatingState
     };
 
     bool switchState(State newState);
-    static String toString(State state);
-    String toString();
+    static std::string toString(State state);
+    std::string toString();
     bool isState(State state) const;
     State state() const;
 

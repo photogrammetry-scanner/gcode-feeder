@@ -1,7 +1,6 @@
 #if !defined(ENV_NATIVE)
 #include "Resources.h"
 #include <Esp.h>
-#include <WString.h>
 #include <elapsedMillis.h>
 
 
@@ -17,17 +16,17 @@ struct Firmware : public Resources
 
         if(cncSerialBuffer.hasLine())
         {
-            String line{ cncSerialBuffer.getLine().c_str() };
+            std::string line{ cncSerialBuffer.getLine() };
             if(!gcodeBuffer.isProcessed())
             {
                 gcodeBuffer.setResponse(line);
             }
             else
-                Serial.println("received unexpected cnc response '" + line + "'");
+                Serial.println(std::string("received unexpected cnc response '" + line + "'").c_str());
 
             if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
-                display.screen.drawString(0, Display::L3, gcodeBuffer.getResponse());
+                display.screen.drawString(0, Display::L3, gcodeBuffer.getResponse().c_str());
                 display.screen.display();
             }
 
@@ -35,11 +34,13 @@ struct Firmware : public Resources
 
             if(!gcodeBuffer.isResponseOk())
             {
-                Serial.println("cnc response '" + gcodeBuffer.getResponse() +
-                               "' is erroneous (code=" + gcodeBuffer.getErrorCode() + "), retransmit line");
+                Serial.println(std::string("cnc response '" + gcodeBuffer.getResponse() +
+                                           "' is erroneous (code=" + std::to_string(gcodeBuffer.getErrorCode()) + "), retransmit line")
+                               .c_str());
                 if(subsequentErrors >= allowedSubsequentErrors)
                 {
-                    Serial.println(String() + "error: too many erroneous responses (" + subsequentErrors + "), aborting");
+                    Serial.println(std::string("error: too many erroneous responses (" + std::to_string(subsequentErrors) + "), aborting")
+                                   .c_str());
                     subsequentErrors = 0;
                     operatingMode.switchState(OperatingState::State::WaitingForCncController);
                 }
@@ -49,17 +50,17 @@ struct Firmware : public Resources
             }
             else // response OK
             {
-                Serial.println("cnc response '" + gcodeBuffer.getResponse() + "'");
+                Serial.println(std::string("cnc response '" + gcodeBuffer.getResponse() + "'").c_str());
                 subsequentErrors = 0;
 
                 if(!gcodeBuffer.isMotionFinished() && operatingMode.isState(OperatingState::State::RunningFromFile))
                 {
-                    Serial.println("waiting for '" + gcodeBuffer.getGcode() + "' motion to finish");
+                    Serial.println(std::string("waiting for '" + gcodeBuffer.getGcode() + "' motion to finish").c_str());
                     operatingMode.switchState(OperatingState::State::WaitCommandFromFileMotion);
                 }
                 else if(!gcodeBuffer.isMotionFinished() && operatingMode.isState(OperatingState::State::Idle))
                 {
-                    Serial.println("waiting for '" + gcodeBuffer.getGcode() + "' motion to finish");
+                    Serial.println(std::string("waiting for '" + gcodeBuffer.getGcode() + "' motion to finish").c_str());
                     operatingMode.switchState(OperatingState::State::WaitCommandMotion);
                 }
                 else if(operatingMode.isState(OperatingState::State::WaitingForCncController))
@@ -70,7 +71,8 @@ struct Firmware : public Resources
 
             if(operatingMode.isState(OperatingState::State::RunningFromFile))
             {
-                display.screen.drawString(0, Display::L5, String() + "L " + gcodeFileRunner.getCurrentLine());
+                display.screen.drawString(0, Display::L5,
+                                          std::string("L " + std::to_string(gcodeFileRunner.getCurrentLine())).c_str());
                 display.screen.display();
             }
         }
@@ -81,15 +83,15 @@ struct Firmware : public Resources
     {
         if(!gcodeBuffer.isProcessed() && !gcodeBuffer.isTransmitted())
         {
-            Serial.println("send gcode='" + gcodeBuffer.getGcode() + "'");
+            Serial.println(std::string("send gcode='" + gcodeBuffer.getGcode() + "'").c_str());
             if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
                 display.screen.clear();
                 display.screen.drawString(0, Display::L1, "gcode->cnc");
-                display.screen.drawString(0, Display::L2, gcodeBuffer.getGcode());
+                display.screen.drawString(0, Display::L2, gcodeBuffer.getGcode().c_str());
                 display.screen.display();
             }
-            cncSerial.print(gcodeBuffer.getGcode() + "\n");
+            cncSerial.print(std::string(gcodeBuffer.getGcode() + '\n').c_str());
             gcodeBuffer.setTransmitted();
         }
     }
@@ -163,9 +165,9 @@ struct Firmware : public Resources
             if(pendingResponses > 0)
                 pendingResponses--;
 
-            const String line{ cncSerialBuffer.getLine().c_str() };
-            Serial.println("cnc status: '" + line + "'");
-            if(!line.startsWith("<Idle|"))
+            const std::string line{ cncSerialBuffer.getLine() };
+            Serial.println(std::string("cnc status: '" + line + "'").c_str());
+            if(line.rfind("<Idle|", 0) != 0)
                 return;
             else
             {
