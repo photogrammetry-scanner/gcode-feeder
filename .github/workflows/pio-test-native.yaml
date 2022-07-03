@@ -24,7 +24,7 @@ on:
 
 jobs:
   build-all:
-    name: Build all targets on ${{ matrix.os }}
+    name: Build test targets on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
