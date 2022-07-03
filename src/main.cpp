@@ -6,12 +6,12 @@
 
 struct Firmware : public Resources
 {
-    void handleCncResponse()
+    void handleBufferedCncReception()
     {
         const uint8_t allowedSubsequentErrors{ 4 };
 
-        if(operatingMode.isState(OperatingState::State::WaitCommandFromFileMotion) ||
-           operatingMode.isState(OperatingState::State::WaitCommandMotion))
+        if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished) ||
+           operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
             return;
 
         if(cncSerialBuffer.hasLine())
@@ -22,7 +22,8 @@ struct Firmware : public Resources
                 gcodeBuffer.setResponse(line);
             }
             else
-                Serial.println(std::string("received unexpected cnc response '" + line + "'").c_str());
+                Serial.println(
+                std::string(std::to_string(millis()) + " received unexpected cnc response '" + line + "'").c_str());
 
             if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
@@ -34,15 +35,16 @@ struct Firmware : public Resources
 
             if(!gcodeBuffer.isResponseOk())
             {
-                Serial.println(std::string("cnc response '" + gcodeBuffer.getResponse() +
+                Serial.println(std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() +
                                            "' is erroneous (code=" + std::to_string(gcodeBuffer.getErrorCode()) + "), retransmit line")
                                .c_str());
                 if(subsequentErrors >= allowedSubsequentErrors)
                 {
-                    Serial.println(std::string("error: too many erroneous responses (" + std::to_string(subsequentErrors) + "), aborting")
+                    Serial.println(std::string(std::to_string(millis()) + " error: too many erroneous responses (" +
+                                               std::to_string(subsequentErrors) + "), aborting")
                                    .c_str());
                     subsequentErrors = 0;
-                    operatingMode.switchState(OperatingState::State::WaitingForCncController);
+                    operatingMode.switchState(OperatingState::State::WaitingForCncControllerReady);
                 }
                 subsequentErrors++;
                 gcodeBuffer.setTransmitted(false);
@@ -50,20 +52,23 @@ struct Firmware : public Resources
             }
             else // response OK
             {
-                Serial.println(std::string("cnc response '" + gcodeBuffer.getResponse() + "'").c_str());
+                Serial.println(
+                std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() + "'").c_str());
                 subsequentErrors = 0;
 
                 if(!gcodeBuffer.isMotionFinished() && operatingMode.isState(OperatingState::State::RunningFromFile))
                 {
-                    Serial.println(std::string("waiting for '" + gcodeBuffer.getGcode() + "' motion to finish").c_str());
-                    operatingMode.switchState(OperatingState::State::WaitCommandFromFileMotion);
+                    Serial.println(std::string(std::to_string(millis()) + " waiting for '" + gcodeBuffer.getGcode() + "' motion to finish")
+                                   .c_str());
+                    operatingMode.switchState(OperatingState::State::WaitFileCommandMotionFinished);
                 }
                 else if(!gcodeBuffer.isMotionFinished() && operatingMode.isState(OperatingState::State::Idle))
                 {
-                    Serial.println(std::string("waiting for '" + gcodeBuffer.getGcode() + "' motion to finish").c_str());
-                    operatingMode.switchState(OperatingState::State::WaitCommandMotion);
+                    Serial.println(std::string(std::to_string(millis()) + " waiting for '" + gcodeBuffer.getGcode() + "' motion to finish")
+                                   .c_str());
+                    operatingMode.switchState(OperatingState::State::WaitHttpCommandMotionFinished);
                 }
-                else if(operatingMode.isState(OperatingState::State::WaitingForCncController))
+                else if(operatingMode.isState(OperatingState::State::WaitingForCncControllerReady))
                 {
                     operatingMode.switchState(OperatingState::State::Idle);
                 }
@@ -79,11 +84,11 @@ struct Firmware : public Resources
     }
 
 
-    void sendBufferedGcode()
+    void handleBufferedGcodeTransmission()
     {
         if(!gcodeBuffer.isProcessed() && !gcodeBuffer.isTransmitted())
         {
-            Serial.println(std::string("send gcode='" + gcodeBuffer.getGcode() + "'").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " send gcode='" + gcodeBuffer.getGcode() + "'").c_str());
             if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
                 display.screen.clear();
@@ -97,34 +102,33 @@ struct Firmware : public Resources
     }
 
 
-    void feedGcodeBufferFromFile()
+    void handleStateRunningFromFile()
     {
-        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK + 1 };
-
         if(!operatingMode.isState(OperatingState::State::RunningFromFile))
             return;
 
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK + 1 };
         if(elapsedTimeMs >= DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK)
         {
-            gcodeFileRunner.process();
+            gcodeFileRunner.tryBufferNextLine();
             elapsedTimeMs = 0;
         }
     }
 
-    void waitForCncControllerReady()
-    {
-        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK + 1 };
 
-        if(!operatingMode.isState(OperatingState::State::WaitingForCncController))
+    void handleStateWaitForCncControllerReady()
+    {
+        if(!operatingMode.isState(OperatingState::State::WaitingForCncControllerReady))
             return;
 
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK + 1 };
         if(elapsedTimeMs < DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK)
             return;
 
         gcodeBuffer.setGcode("G91");
-        sendBufferedGcode();
+        handleBufferedGcodeTransmission();
         cncSerialBuffer.read();
-        handleCncResponse();
+        handleBufferedCncReception();
 
         if(gcodeBuffer.isResponseOk())
         {
@@ -135,25 +139,25 @@ struct Firmware : public Resources
     }
 
 
-    void waitForMotionFinished()
+    void handleStateWaitForMotionFinished()
     {
-        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_MOTION_FINISHED_CHECK + 1 };
         static uint8_t pendingResponses{ 0 };
 
         if(!gcodeBuffer.isProcessed())
             return;
 
-        if(!(operatingMode.isState(OperatingState::State::WaitCommandFromFileMotion) ||
-             operatingMode.isState(OperatingState::State::WaitCommandMotion)))
+        if(!operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished) &&
+           !operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
             return;
 
+        static elapsedMillis elapsedTimeMs;
         if(elapsedTimeMs <= DELAY_MS_FOR_MOTION_FINISHED_CHECK)
             return;
         elapsedTimeMs = 0;
 
         if(pendingResponses == 0)
         {
-            Serial.println("send: '?'");
+            Serial.println(std::string(std::to_string(millis()) + " send: '?'").c_str());
             cncSerial.write("?");
             pendingResponses++;
         }
@@ -166,12 +170,12 @@ struct Firmware : public Resources
                 pendingResponses--;
 
             const std::string line{ cncSerialBuffer.getLine() };
-            Serial.println(std::string("cnc status: '" + line + "'").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " cnc status: '" + line + "'").c_str());
             if(line.rfind("<Idle|", 0) != 0)
                 return;
             else
             {
-                Serial.println("motion finished");
+                Serial.println(std::string(std::to_string(millis()) + " motion finished").c_str());
                 pendingResponses = 0;
                 // cncSerialBuffer.clear();
             }
@@ -183,15 +187,15 @@ struct Firmware : public Resources
 
         gcodeBuffer.setMotionFinished();
 
-        if(operatingMode.isState(OperatingState::State::WaitCommandFromFileMotion))
+        if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished))
             operatingMode.switchState(OperatingState::State::RunningFromFile);
 
-        if(operatingMode.isState(OperatingState::State::WaitCommandMotion))
+        if(operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
             operatingMode.switchState(OperatingState::State::Idle);
     }
 
 
-    void handleResetWifi()
+    void handleStateDoResetWifi()
     {
         if(!operatingMode.isState(OperatingState::State::DoResetWifi))
             return;
@@ -202,24 +206,29 @@ struct Firmware : public Resources
     }
 
 
-    void handleReboot()
+    void handleStateDoReboot()
     {
         if(!operatingMode.isState(OperatingState::State::DoReboot))
             return;
         EspClass::restart();
     }
 
+
+    void fetchPendingBytesFromCncSerial() { cncSerialBuffer.read(); }
+
+
     void process()
     {
-        cncSerialBuffer.read();
-        waitForCncControllerReady();
-        handleCncResponse();
-        feedGcodeBufferFromFile();
-        sendBufferedGcode();
-        waitForMotionFinished();
+        fetchPendingBytesFromCncSerial();
+        handleStateWaitForCncControllerReady();
 
-        handleResetWifi();
-        handleReboot();
+        handleBufferedCncReception();
+        handleStateRunningFromFile();
+        handleBufferedGcodeTransmission();
+        handleStateWaitForMotionFinished();
+
+        handleStateDoResetWifi();
+        handleStateDoReboot();
     }
 } f;
 

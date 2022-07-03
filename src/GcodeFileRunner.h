@@ -11,7 +11,7 @@ struct GcodeFileRunner
 {
     GcodeFileRunner(GcodeBuffer &buffer, OperatingState &operatingMode);
     bool setFilepath(const std::string &filePath);
-    void process();
+    void tryBufferNextLine();
     void reset();
     const uint32_t &getCurrentLine() const;
 

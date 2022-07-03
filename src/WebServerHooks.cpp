@@ -7,7 +7,7 @@
 
 void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = "", const String &extra_post_html = "")
 {
-    Serial.println("WebServerHooks -> indexHtml");
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks -> indexHtml").c_str());
     std::string html{
         "<!DOCTYPE html>\n"
         "<html>\n"
@@ -135,7 +135,9 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
 
 void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks::reboot: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::reboot: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
     std::string info{ "{\n  \"message\":\"reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
     request.send(200, "application/json", info.c_str());
@@ -145,7 +147,9 @@ void reboot(AsyncWebServerRequest &request, OperatingState &operatingMode)
 
 void deviceStatus(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks::deviceStatus: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::deviceStatus: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
     String status;
     status += "\n    \"shutdown_reason\":\"";
     status += EspClass::getResetReason().c_str();
@@ -203,7 +207,9 @@ void deviceStatus(AsyncWebServerRequest &request)
 
 void resetWifi(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks::resetWifi: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::resetWifi: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
     String info{ "{\n  \"message\":\"reset wifi settings and reboot\",\n" };
     info += "  \"request\":\"ok\"\n}";
     request.send(200, "application/json", info);
@@ -217,11 +223,15 @@ void sendGcode(AsyncWebServerRequest &request,
                const String &extra_pre_html = "",
                const String &extra_post_html = "")
 {
-    Serial.println("WebServerHooks::sendGcode: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::sendGcode: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
-        Serial.println(std::string("cannot accept gcode via http while not in idle (" + operatingMode.toString() + ")").c_str());
+        Serial.println(std::string(std::to_string(millis()) + " cannot accept gcode via http while not in idle (" +
+                                   operatingMode.toString() + ")")
+                       .c_str());
         std::string error{ "{" };
         error += "\n  \"message\":\"cannot accept gcode via http while not in idle,"
                  " current mode is " +
@@ -243,14 +253,14 @@ void sendGcode(AsyncWebServerRequest &request,
 
             if(gcodeBuffer.isProcessed())
             {
-                Serial.println(std::string("buffer gcode='" + gcode + "'").c_str());
+                Serial.println(std::string(std::to_string(millis()) + " buffer gcode='" + gcode + "'").c_str());
                 message += " buffered";
                 gcodeBuffer.setGcode(gcode);
             }
             else
             {
-                Serial.println(std::string("failed to buffer gcode '" + gcode + "' while processing other gcode '" +
-                                           gcodeBuffer.getGcode() + "'")
+                Serial.println(std::string(std::to_string(millis()) + " failed to buffer gcode '" + gcode +
+                                           "' while processing other gcode '" + gcodeBuffer.getGcode() + "'")
                                .c_str());
                 message += " not buffered, still processing other gcode '" + gcodeBuffer.getGcode() + "'";
                 requestStatus = "error";
@@ -260,7 +270,7 @@ void sendGcode(AsyncWebServerRequest &request,
         {
             message = "failed to retrieve value of argument 'gcode' from http request";
             requestStatus = "error";
-            Serial.println(message.c_str());
+            Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
         }
     }
     else
@@ -276,7 +286,9 @@ void sendGcode(AsyncWebServerRequest &request,
 
 void listFiles(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks::listFiles: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::listFiles: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
 
     std::string message;
 
@@ -285,7 +297,7 @@ void listFiles(AsyncWebServerRequest &request)
     if(!root)
     {
         message = "failed to open directory";
-        Serial.println(message.c_str());
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
         request.send(200, "application/json",
                      std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
@@ -293,7 +305,7 @@ void listFiles(AsyncWebServerRequest &request)
     if(!root.isDirectory())
     {
         message = "'" + path + "' is not a directory";
-        Serial.println(message.c_str());
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
         request.send(200, "application/json",
                      std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
@@ -338,68 +350,77 @@ void listFiles(AsyncWebServerRequest &request)
 
 void readFile(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks::readFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
-    String path = "NA";
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::readFile: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
+    std::string path = "NA";
 
     if(request.hasArg("name"))
-        path = request.getParam("name")->value();
+        path = request.getParam("name")->value().c_str();
 
-    if(!LittleFS.exists(path))
+    if(!LittleFS.exists(path.c_str()))
     {
-        const String message{ "failed to read file '" + path + "', file does not exist" };
-        Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        const std::string message{ "failed to read file '" + path + "', file does not exist" };
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
+        request.send(200, "application/json",
+                     std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
     }
 
-    Serial.println("read file '" + path + "'");
-    request.send(LittleFS, path, "text/plain");
+    Serial.println(std::string(std::to_string(millis()) + " read file '" + path + "'").c_str());
+    request.send(LittleFS, path.c_str(), "text/plain");
 }
 
 
 void deleteFile(AsyncWebServerRequest &request)
 {
-    Serial.println("WebServerHooks::deleteFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
-    String path = "NA";
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::deleteFile: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
+    std::string path = "NA";
 
     if(request.hasArg("name"))
-        path = request.getParam("name")->value();
+        path = request.getParam("name")->value().c_str();
 
-    if(!LittleFS.exists(path))
+    if(!LittleFS.exists(path.c_str()))
     {
-        const String message{ "failed to delete file '" + path + "', file does not exist" };
-        Serial.println(message);
-        request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}");
+        const std::string message{ "failed to delete file '" + path + "', file does not exist" };
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
+        request.send(200, "application/json",
+                     std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
     }
 
-    String result;
-    String message;
-    if(!LittleFS.remove(path))
+    std::string result;
+    std::string message;
+    if(!LittleFS.remove(path.c_str()))
     {
         result = "error";
         message = "failed to delete file '" + path + "'";
-        Serial.println(message);
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
     }
     else
     {
         result = "ok";
         message = "file '" + path + "' deleted";
-        Serial.println(message);
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
     }
-    request.send(200, "application/json", "{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + result + "\"\n}");
+    request.send(200, "application/json",
+                 std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"" + result + "\"\n}").c_str());
 }
 
 
 void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks::runFile: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::runFile: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
     std::string path = "NA";
 
     if(!operatingMode.isState(OperatingState::State::Idle))
     {
         const std::string message{ "cannot start processing file while not in idle (" + operatingMode.toString() + ")" };
-        Serial.println(message.c_str());
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
         request.send(200, "application/json",
                      std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
@@ -411,7 +432,7 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
     if(!LittleFS.exists(path.c_str()))
     {
         const std::string message{ "failed to start processing file '" + path + "', file does not exist" };
-        Serial.println(message.c_str());
+        Serial.println(std::string(std::to_string(millis()) + " " + message).c_str());
         request.send(200, "application/json",
                      std::string("{\n  \"message\":\"" + message + "\",\n  \"request\":\"error\"\n}").c_str());
         return;
@@ -427,7 +448,9 @@ void runFile(AsyncWebServerRequest &request, GcodeFileRunner &fileRunner, Operat
 
 void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingMode)
 {
-    Serial.println("WebServerHooks::getOperatingMode: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::getOperatingMode: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
     request.send(200, "application/json",
                  std::string("{\n  \"message\":\"" + operatingMode.toString() + "\",\n  \"request\":\"ok\"\n}").c_str());
 }
@@ -435,7 +458,9 @@ void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingM
 
 void getGcodeStatus(AsyncWebServerRequest &request, const GcodeBuffer &gcodeBuffer)
 {
-    Serial.println("WebServerHooks::getGcodeStatus: " + request.client()->remoteIP().toString() + " -> " + request.url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::getGcodeStatus: " +
+                               request.client()->remoteIP().toString().c_str() + " -> " + request.url().c_str())
+                   .c_str());
     std::string info;
     info += std::string(+R"("gcode":")" + gcodeBuffer.getGcode() + "\",\n    ");
     info += std::string(+R"("is_transmitted":")" + std::string(gcodeBuffer.isTransmitted() ? "true" : "false") + "\",\n    ");
@@ -451,24 +476,30 @@ void getGcodeStatus(AsyncWebServerRequest &request, const GcodeBuffer &gcodeBuff
 
 void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final)
 {
-    Serial.println("WebServerHooks::handleUpload: " + request->client()->remoteIP().toString() + " -> " + request->url());
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::handleUpload: " +
+                               request->client()->remoteIP().toString().c_str() + " -> " + request->url().c_str())
+                   .c_str());
 
     if(!index)
     {
-        Serial.println("upload '" + String(filename) + "' started");
+        Serial.println(std::string(std::to_string(millis()) + " upload '" + std::string(filename.c_str()) + "' started").c_str());
         request->_tempFile = LittleFS.open("/" + filename, "w");
     }
 
     if(len)
     {
         request->_tempFile.write(data, len);
-        Serial.println("writing file '" + String(filename) + "' index=" + String(index) + " len=" + String(len));
+        Serial.println(std::string(std::to_string(millis()) + " writing file '" + std::string(filename.c_str()) +
+                                   "' index=" + std::to_string(index) + " len=" + std::to_string(len))
+                       .c_str());
     }
 
     if(final)
     {
         request->_tempFile.close();
-        Serial.println("upload '" + filename + "' completed, size=" + String(index + len));
+        Serial.println(std::string(std::to_string(millis()) + " upload '" + std::string(filename.c_str()) +
+                                   "' completed, size=" + std::to_string(index + len))
+                       .c_str());
         request->redirect("/");
     }
 }
@@ -476,7 +507,7 @@ void handleUpload(AsyncWebServerRequest *request, const String &filename, size_t
 
 void WebServerHooks::setup(Resources &r)
 {
-    Serial.println("WebServerHooks::setup -> bind webserver hooks");
+    Serial.println(std::string(std::to_string(millis()) + " WebServerHooks::setup -> bind webserver hooks").c_str());
     r.webServer.reset();
 
     r.webServer.on("/", [](AsyncWebServerRequest *request) { indexHtml(*request); });

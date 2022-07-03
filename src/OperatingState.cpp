@@ -5,7 +5,8 @@
 bool OperatingState::switchState(OperatingState::State newState)
 {
     bool hasSwitched{ currentState != newState };
-    Serial.println(std::string("switch operating state: " + toString(currentState) + " -> " + toString(newState)).c_str());
+    Serial.println(std::string(std::to_string(millis()) + " switch operating state: " + toString(currentState) + " -> " + toString(newState))
+                   .c_str());
     currentState = newState;
     return hasSwitched;
 }
@@ -18,20 +19,20 @@ std::string OperatingState::toString(OperatingState::State s)
 {
     switch(s)
     {
-    case State::Undefined:
-        return "Undefined";
+    case State::Uninitialized:
+        return "Uninitialized";
     case State::Setup:
         return "Setup";
-    case State::WaitingForCncController:
-        return "WaitingForCncController";
+    case State::WaitingForCncControllerReady:
+        return "WaitingForCncControllerReady";
     case State::Idle:
         return "Idle";
-    case State::WaitCommandMotion:
-        return "WaitCommandMotion";
+    case State::WaitHttpCommandMotionFinished:
+        return "WaitHttpCommandMotionFinished";
     case State::RunningFromFile:
         return "RunningFromFile";
-    case State::WaitCommandFromFileMotion:
-        return "WaitCommandFromFileMotion";
+    case State::WaitFileCommandMotionFinished:
+        return "WaitFileCommandMotionFinished";
     case State::PausedFromFile:
         return "PausedFromFile";
     case State::FinishedFromFile:
