@@ -1,3 +1,4 @@
+#if !defined(ENV_NATIVE)
 #include "WebServerHooks.h"
 #include "FS.h"
 #include <ESPAsyncWebServer.h>
@@ -426,7 +427,7 @@ void getOperatingMode(AsyncWebServerRequest &request, OperatingState &operatingM
 }
 
 
-void getGcodeStatus(AsyncWebServerRequest &request, GcodeBuffer &gcodeBuffer)
+void getGcodeStatus(AsyncWebServerRequest &request, const GcodeBuffer &gcodeBuffer)
 {
     Serial.println("WebServerHooks::getGcodeStatus: " + request.client()->remoteIP().toString() + " -> " + request.url());
     String info;
@@ -521,3 +522,5 @@ void WebServerHooks::setup(Resources &r)
     [](AsyncWebServerRequest *request)
     { request->send(404, "application/json", "{\n  \"message\":\"URL not found\",\n  \"request\":\"error\"\n}"); });
 }
+
+#endif

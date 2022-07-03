@@ -1,3 +1,4 @@
+#if !defined(ENV_NATIVE)
 #include "Resources.h"
 #include "WebServerHooks.h"
 #include <HardwareSerial.h>
@@ -71,3 +72,5 @@ void Resources::setup()
     Serial.println("Firmware::setup done");
     operatingMode.switchState(OperatingState::State::WaitingForCncController);
 }
+
+#endif

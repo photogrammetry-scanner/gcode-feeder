@@ -1,3 +1,4 @@
+#if !defined(ENV_NATIVE)
 #include "GcodeBuffer.h"
 #include <stdio.h>
 
@@ -90,3 +91,5 @@ bool GcodeBuffer::isMotionFinished() const { return motionFinished; }
 
 
 void GcodeBuffer::setMotionFinished(bool isFinished) { motionFinished = isFinished; }
+
+#endif

@@ -1,5 +1,5 @@
 #pragma once
-
+#if !defined(ENV_NATIVE)
 #include <FS.h>
 #include <WString.h>
 
@@ -23,3 +23,5 @@ protected:
     GcodeBuffer &gcodeBuffer;
     OperatingState &operatingMode;
 };
+
+#endif

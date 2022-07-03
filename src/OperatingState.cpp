@@ -1,3 +1,4 @@
+#if !defined(ENV_NATIVE)
 #include "OperatingState.h"
 #include <HardwareSerial.h>
 
@@ -51,3 +52,5 @@ OperatingState::State OperatingState::state() const { return currentState; }
 
 
 bool OperatingState::isState(OperatingState::State s) const { return s == currentState; }
+
+#endif

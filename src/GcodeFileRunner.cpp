@@ -1,3 +1,4 @@
+#if !defined(ENV_NATIVE)
 #include "GcodeFileRunner.h"
 #include "GcodeBuffer.h"
 #include "OperatingState.h"
@@ -80,3 +81,5 @@ bool GcodeFileRunner::setFilepath(const String &path)
 
 
 const uint32_t &GcodeFileRunner::getCurrentLine() const { return currentLine; }
+
+#endif

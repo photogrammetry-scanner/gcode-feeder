@@ -1,19 +1,21 @@
 #pragma once
-
-#include <WString.h>
+#if !defined(ENV_NATIVE)
+#include <string>
 
 class Stream;
 
+
 typedef struct LineBufferedStream
 {
-    LineBufferedStream(Stream &serial);
+    explicit LineBufferedStream(Stream &stream);
     bool read();
     void clear();
     bool hasLine() const;
-    String getLine(bool inclusiveNewlineCharacter = false);
+    std::string getLine(bool inclusiveNewlineCharacter = false);
 
 protected:
     Stream &stream;
-    String buffer;
+    std::string buffer;
 
 } LineBufferedSerial;
+#endif

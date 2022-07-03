@@ -19,3 +19,12 @@ repos:
     - id: mixed-line-ending
       args: ["--fix=lf"]
     - id: trailing-whitespace
+
+- repo: local
+  hooks:
+    - id: platformio-check
+      name: PlatformIO check
+      entry: bash -c 'platformio check --fail-on-defect=high --fail-on-defect=medium --fail-on-defect=low'
+      language: system
+      types: [c, c++]
+      pass_filenames: false

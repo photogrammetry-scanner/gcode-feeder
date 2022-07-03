@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(ENV_NATIVE)
 
 #include <ESP8266WiFi.h>
 #include <Esp.h>
@@ -34,7 +35,7 @@ typedef struct Resources
     struct PreInit
     {
         PreInit();
-    } _preInit = {};
+    } _preInit{};
 
     OperatingState operatingMode{};
 
@@ -51,7 +52,9 @@ typedef struct Resources
 
     struct PostInit
     {
-        PostInit(Resources &r);
-    } _postInit = { *this };
+        explicit PostInit(Resources &r);
+    } _postInit{ *this };
 
 } Resources;
+
+#endif

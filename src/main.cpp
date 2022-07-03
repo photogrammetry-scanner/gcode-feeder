@@ -1,3 +1,4 @@
+#if !defined(ENV_NATIVE)
 #include "Resources.h"
 #include <Esp.h>
 #include <WString.h>
@@ -8,7 +9,6 @@ struct Firmware : public Resources
 {
     void handleCncResponse()
     {
-        static uint8_t subsequentErrors;
         const uint8_t allowedSubsequentErrors{ 4 };
 
         if(operatingMode.isState(OperatingState::State::WaitCommandFromFileMotion) ||
@@ -17,7 +17,7 @@ struct Firmware : public Resources
 
         if(cncSerialBuffer.hasLine())
         {
-            String line{ cncSerialBuffer.getLine() };
+            String line{ cncSerialBuffer.getLine().c_str() };
             if(!gcodeBuffer.isProcessed())
             {
                 gcodeBuffer.setResponse(line);
@@ -30,6 +30,8 @@ struct Firmware : public Resources
                 display.screen.drawString(0, Display::L3, gcodeBuffer.getResponse());
                 display.screen.display();
             }
+
+            static uint8_t subsequentErrors;
 
             if(!gcodeBuffer.isResponseOk())
             {
@@ -147,7 +149,7 @@ struct Firmware : public Resources
             return;
         elapsedTimeMs = 0;
 
-        if(pendingResponses <= 0)
+        if(pendingResponses == 0)
         {
             Serial.println("send: '?'");
             cncSerial.write("?");
@@ -161,7 +163,7 @@ struct Firmware : public Resources
             if(pendingResponses > 0)
                 pendingResponses--;
 
-            const String line{ cncSerialBuffer.getLine() };
+            const String line{ cncSerialBuffer.getLine().c_str() };
             Serial.println("cnc status: '" + line + "'");
             if(!line.startsWith("<Idle|"))
                 return;
@@ -223,3 +225,5 @@ struct Firmware : public Resources
 void setup() { f.setup(); }
 
 void loop() { f.process(); }
+
+#endif

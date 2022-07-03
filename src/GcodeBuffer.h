@@ -1,5 +1,5 @@
 #pragma once
-
+#if !defined(ENV_NATIVE)
 #include <WString.h>
 
 
@@ -27,3 +27,5 @@ protected:
     bool motionFinished{ true };
 
 } GcodeBuffer;
+
+#endif

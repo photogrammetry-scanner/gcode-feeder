@@ -1,8 +1,9 @@
+#if !defined(ENV_NATIVE)
 #include "LineBufferedStream.h"
+#include "impl.h"
 #include <Stream.h>
 
-
-LineBufferedStream::LineBufferedStream(Stream &serial) : stream(serial) {}
+LineBufferedStream::LineBufferedStream(Stream &s) : stream(s) {}
 
 
 bool LineBufferedStream::read()
@@ -14,15 +15,8 @@ bool LineBufferedStream::read()
             return false;
 
         char c = static_cast<char>(i);
-        if(c == '\r')
-            continue;
-
-        buffer += c;
-
-        if(c == '\n')
-        {
+        if(bufferChar(buffer, c))
             return true;
-        }
     }
     return false;
 }
@@ -31,35 +25,12 @@ bool LineBufferedStream::read()
 void LineBufferedStream::clear() { buffer.clear(); }
 
 
-bool LineBufferedStream::hasLine() const { return buffer.indexOf('\n', 0) >= 0; }
+bool LineBufferedStream::hasLine() const { return buffer.find('\n', 0) != std::string::npos; }
 
 
-String LineBufferedStream::getLine(bool inclusiveNewlineCharacter)
+std::string LineBufferedStream::getLine(bool inclusiveNewlineCharacter)
 {
-    int nextNewlineIdx{ buffer.indexOf('\n') };
-
-    if(nextNewlineIdx < 0)
-        return {};
-
-    if(nextNewlineIdx == 0)
-    {
-        buffer.remove(0, 1);
-        if(inclusiveNewlineCharacter)
-            return { "\n" };
-        else
-            return {};
-    }
-
-    if(nextNewlineIdx > 0)
-    {
-        String nextLine{ buffer.substring(0, nextNewlineIdx + 1) };
-        buffer.remove(0, nextNewlineIdx + 1);
-
-        if(!inclusiveNewlineCharacter)
-            nextLine.remove(nextLine.length() - 1, 1);
-
-        return nextLine;
-    }
-
-    return {};
+    return getAndRemoveLine(buffer, inclusiveNewlineCharacter);
 }
+
+#endif

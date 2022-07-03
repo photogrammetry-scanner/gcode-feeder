@@ -1,4 +1,5 @@
 #pragma once
+#if !defined(ENV_NATIVE)
 #include <WString.h>
 
 struct OperatingState
@@ -29,3 +30,5 @@ struct OperatingState
 protected:
     State currentState{ State::Invalid };
 };
+
+#endif
