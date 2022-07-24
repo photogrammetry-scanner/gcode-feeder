@@ -1,8 +1,8 @@
 #if !defined(ENV_NATIVE)
 #include "Resources.h"
+#include <ArduinoOTA.h>
 #include <Esp.h>
 #include <elapsedMillis.h>
-
 
 struct Firmware : public Resources
 {
@@ -247,6 +247,7 @@ struct Firmware : public Resources
 
         handleStateDoResetWifi();
         handleStateDoReboot();
+        ArduinoOTA.handle();
     }
 } f;
 
