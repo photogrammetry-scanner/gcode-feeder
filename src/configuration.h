@@ -26,5 +26,5 @@
 // minimum separation for cyclic checks (real time span is >= delay)
 
 #define DELAY_MS_FOR_NEXT_LINE_FROM_FILE_CHECK 80      // separation to send next line to CNC controller
-#define DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK 500 // separation to wait for the CNC controller to boot
-#define DELAY_MS_FOR_MOTION_FINISHED_CHECK 100         // separation to check if current motion has finished
+#define DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK 300 // separation to wait for the CNC controller checks during setup
+#define DELAY_MS_FOR_MOTION_FINISHED_CHECK 80          // separation to check if current motion has finished
