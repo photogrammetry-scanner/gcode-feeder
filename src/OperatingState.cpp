@@ -21,30 +21,45 @@ std::string OperatingState::toString(OperatingState::State s)
     {
     case State::Uninitialized:
         return "Uninitialized";
+
     case State::Setup:
         return "Setup";
+    case State::SetupFinished:
+        return "SetupFinished";
+    case State::DoResetCncController:
+        return "DoResetCncController";
     case State::WaitingForCncControllerReady:
         return "WaitingForCncControllerReady";
+
     case State::Idle:
         return "Idle";
     case State::WaitHttpCommandMotionFinished:
         return "WaitHttpCommandMotionFinished";
-    case State::RunningFromFile:
-        return "RunningFromFile";
     case State::WaitFileCommandMotionFinished:
         return "WaitFileCommandMotionFinished";
+    case State::RunningFromFile:
+        return "RunningFromFile";
     case State::PausedFromFile:
         return "PausedFromFile";
     case State::FinishedFromFile:
         return "FinishedFromFile";
-    case State::Invalid:
-        return "Invalid";
+
+
     case State::DoResetWifi:
         return "DoResetWifi";
+
+    case State::HaltOnSetupFailed:
+        return "HaltOnSetupFailed";
     case State::HaltOnError:
         return "HaltOnError";
     case State::DoReboot:
         return "DoReboot";
+
+    case State::AnyState:
+        return "AnyState";
+    case State::Invalid:
+        return "Invalid";
+
     default:
         return "UNKNOWN";
     }

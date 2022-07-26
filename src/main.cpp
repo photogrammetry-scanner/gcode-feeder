@@ -8,88 +8,71 @@ struct Firmware : public Resources
 {
     void handleBufferedCncReception()
     {
-        const uint8_t allowedSubsequentErrors{ 12 };
-
-        if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished) ||
-           operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
+        if(!operatingMode.isState(OperatingState::State::WaitingForCncControllerReady) &&
+           !operatingMode.isState(OperatingState::State::Idle) && !operatingMode.isState(OperatingState::State::RunningFromFile) &&
+           !operatingMode.isState(OperatingState::State::PausedFromFile) &&
+           !operatingMode.isState(OperatingState::State::FinishedFromFile))
             return;
 
-        if(cncSerialBuffer.hasLine())
+        if(!cncSerialBuffer.hasLine())
+            return;
+
+        std::string line{ cncSerialBuffer.getLine() };
+        if(!gcodeBuffer.isProcessed())
         {
-            std::string line{ cncSerialBuffer.getLine() };
-            if(!gcodeBuffer.isProcessed())
+            gcodeBuffer.setResponse(line);
+        }
+        else
+        {
+            Serial.println(std::string(std::to_string(millis()) + " received unexpected cnc response '" + line + "'").c_str());
+            return;
+        }
+
+
+        const uint8_t allowedSubsequentErrors{ 100 };
+        static uint8_t subsequentErrors{ 0 };
+
+        if(!gcodeBuffer.isResponseOk())
+        {
+            Serial.println(std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() +
+                                       "' is erroneous (code=" + std::to_string(gcodeBuffer.getErrorCode()) + "), retransmit line")
+                           .c_str());
+            if(subsequentErrors >= allowedSubsequentErrors)
             {
-                gcodeBuffer.setResponse(line);
+                Serial.println(std::string(std::to_string(millis()) + " error: too many erroneous responses (" +
+                                           std::to_string(subsequentErrors) + "), aborting")
+                               .c_str());
+                subsequentErrors = 0;
+                operatingMode.switchState(OperatingState::State::HaltOnError);
             }
             else
-                Serial.println(
-                std::string(std::to_string(millis()) + " received unexpected cnc response '" + line + "'").c_str());
-
-            if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
-                display.screen.drawString(0, Display::L3, gcodeBuffer.getResponse().c_str());
-                display.screen.display();
+                subsequentErrors++;
+                const std::string gcode{ gcodeBuffer.getGcode() };
+                gcodeBuffer.setGcode(gcode);
+                cncSerialBuffer.clear();
+                delay(100);
             }
+            return;
+        }
 
-            static uint8_t subsequentErrors;
+        Serial.println(std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() + "'").c_str());
+        subsequentErrors = 0;
 
-            if(!gcodeBuffer.isResponseOk())
-            {
-                Serial.println(std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() +
-                                           "' is erroneous (code=" + std::to_string(gcodeBuffer.getErrorCode()) + "), retransmit line")
-                               .c_str());
-                if(subsequentErrors >= allowedSubsequentErrors)
-                {
-                    Serial.println(std::string(std::to_string(millis()) + " error: too many erroneous responses (" +
-                                               std::to_string(subsequentErrors) + "), aborting")
-                                   .c_str());
-                    subsequentErrors = 0;
-                    operatingMode.switchState(OperatingState::State::HaltOnError);
-                }
-                else
-                {
-                    subsequentErrors++;
-                    const std::string gcode{ gcodeBuffer.getGcode() };
-                    gcodeBuffer.setGcode(gcode);
-                }
-            }
-            else // response OK
-            {
-                Serial.println(
-                std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() + "'").c_str());
-                subsequentErrors = 0;
 
-                if(!gcodeBuffer.isMotionFinished() && operatingMode.isState(OperatingState::State::RunningFromFile))
-                {
-                    Serial.println(std::string(std::to_string(millis()) + " waiting for '" + gcodeBuffer.getGcode() + "' motion to finish")
-                                   .c_str());
-                    operatingMode.switchState(OperatingState::State::WaitFileCommandMotionFinished);
-                }
-                else if(!gcodeBuffer.isMotionFinished() && operatingMode.isState(OperatingState::State::Idle))
-                {
-                    Serial.println(std::string(std::to_string(millis()) + " waiting for '" + gcodeBuffer.getGcode() + "' motion to finish")
-                                   .c_str());
-                    operatingMode.switchState(OperatingState::State::WaitHttpCommandMotionFinished);
-                }
-                else if(operatingMode.isState(OperatingState::State::WaitingForCncControllerReady))
-                {
-                    operatingMode.switchState(OperatingState::State::Idle);
-                }
-            }
-
+        if(!gcodeBuffer.isMotionFinished())
+        {
             if(operatingMode.isState(OperatingState::State::RunningFromFile))
-            {
-                display.screen.drawString(0, Display::L5,
-                                          std::string("L " + std::to_string(gcodeFileRunner.getCurrentLine())).c_str());
-                display.screen.display();
-            }
+                operatingMode.switchState(OperatingState::State::WaitFileCommandMotionFinished);
+            if(operatingMode.isState(OperatingState::State::Idle))
+                operatingMode.switchState(OperatingState::State::WaitHttpCommandMotionFinished);
         }
     }
 
 
     void handleBufferedGcodeTransmission()
     {
-        if(!gcodeBuffer.isProcessed() && !gcodeBuffer.isTransmitted())
+        if(!gcodeBuffer.isNone() && !gcodeBuffer.isProcessed() && !gcodeBuffer.isTransmitted())
         {
             Serial.println(std::string(std::to_string(millis()) + " send gcode='" + gcodeBuffer.getGcode() + "'").c_str());
             if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
@@ -124,72 +107,87 @@ struct Firmware : public Resources
         if(!operatingMode.isState(OperatingState::State::WaitingForCncControllerReady))
             return;
 
-        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK + 1 };
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK };
         if(elapsedTimeMs < DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK)
             return;
+        elapsedTimeMs = 0;
 
-        gcodeBuffer.setGcode("G91");
-        handleBufferedGcodeTransmission();
-        cncSerialBuffer.read();
-        handleBufferedCncReception();
-
-        if(gcodeBuffer.isResponseOk())
+        if(!gcodeBuffer.isTransmitted())
         {
-            operatingMode.switchState(OperatingState::State::Idle);
-            cncSerialBuffer.clear();
+            gcodeBuffer.setGcode("G91");
+            return;
         }
 
-        elapsedTimeMs = 0;
+        if(!gcodeBuffer.isProcessed() || !gcodeBuffer.isResponseOk())
+        {
+            gcodeBuffer.setGcode("G91");
+            return;
+        }
+
+        if(gcodeBuffer.isProcessed() && gcodeBuffer.isResponseOk())
+        {
+            cncSerialBuffer.read();
+            cncSerialBuffer.clear();
+            operatingMode.switchState(OperatingState::State::Idle);
+        }
     }
 
 
+    /**
+     * Sends "?" to request status and watches for "<Idle.*".
+     * Additionally forces .read() from CNC serial to reduce latency.
+     * Higher latency is will harm performance when processing from file.
+     */
     void handleStateWaitForMotionFinished()
     {
-        static uint8_t pendingResponses{ 0 };
-
-        if(!gcodeBuffer.isProcessed())
-            return;
-
         if(!operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished) &&
            !operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
             return;
 
-        static elapsedMillis elapsedTimeMs;
-        if(elapsedTimeMs <= DELAY_MS_FOR_MOTION_FINISHED_CHECK)
+        if(!gcodeBuffer.isProcessed())
+            return;
+
+        static elapsedMillis elapsedTimeMs{ DELAY_MS_FOR_MOTION_FINISHED_CHECK };
+        if(elapsedTimeMs < DELAY_MS_FOR_MOTION_FINISHED_CHECK)
             return;
         elapsedTimeMs = 0;
 
+        static uint8_t pendingResponses{ 0 };
         if(pendingResponses == 0)
         {
-            Serial.println(std::string(std::to_string(millis()) + " send: '?'").c_str());
-            cncSerial.write("?");
+            cncSerial.println("?"); // triggers two responses: "ok" + "<Run..." or "<Idle..."
             pendingResponses++;
         }
 
-        while(cncSerialBuffer.read()) {}
+        cncSerialBuffer.read();
+        if(!cncSerialBuffer.hasLine())
+            return;
 
-        if(cncSerialBuffer.hasLine())
+        bool motionFinished{ false };
+        while(cncSerialBuffer.hasLine())
         {
-            if(pendingResponses > 0)
-                pendingResponses--;
-
             const std::string line{ cncSerialBuffer.getLine() };
-            Serial.println(std::string(std::to_string(millis()) + " cnc status: '" + line + "'").c_str());
-            if(line.rfind("<Idle|", 0) != 0)
-                return;
+            if(line.starts_with("ok")) {}
             else
             {
-                Serial.println(std::string(std::to_string(millis()) + " motion finished").c_str());
-                pendingResponses = 0;
-                // cncSerialBuffer.clear();
+                if(pendingResponses > 0)
+                    pendingResponses--;
+                if(line.starts_with("<Idle|"))
+                {
+                    Serial.println(std::string(std::to_string(millis()) + " cnc status: '" + line + "'").c_str());
+                    motionFinished = true;
+                    break;
+                }
             }
         }
-        else
-        {
-            return;
-        }
 
+        if(!motionFinished)
+            return;
+
+        pendingResponses = 0;
         gcodeBuffer.setMotionFinished();
+        cncSerialBuffer.read();
+        cncSerialBuffer.clear();
 
         if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished))
             operatingMode.switchState(OperatingState::State::RunningFromFile);
@@ -218,41 +216,132 @@ struct Firmware : public Resources
     }
 
 
-    void fetchPendingBytesFromCncSerial() { cncSerialBuffer.read(); }
-
-
     void handleHaltStates()
     {
-        if(operatingMode.isState(OperatingState::State::HaltOnError))
+        if(operatingMode.isState(OperatingState::State::HaltOnSetupFailed) || operatingMode.isState(OperatingState::State::HaltOnError))
         {
-            cncSerial.write("Q");
+            cncSerial.println("Q");
             while(true)
             {
                 Serial.println(std::string(std::to_string(millis()) + " firmware halted").c_str());
-                ESP.deepSleep(ESP.deepSleepMax());
+                EspClass::deepSleep(EspClass::deepSleepMax());
             }
         }
     }
 
+
+    void handleStateDoResetCncController()
+    {
+        if(!operatingMode.isState(OperatingState::State::DoResetCncController))
+            return;
+
+        static bool preResetCondition{ false };
+        waitUntilControllerResponsive(preResetCondition, OperatingState::State::AnyState, OperatingState::State::DoResetCncController);
+        if(!preResetCondition)
+            return;
+
+        static bool isFirst{ true };
+        if(isFirst)
+        {
+            isFirst = false;
+            Serial.println(std::string(std::to_string(millis()) + " resetting controller ...").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " send '$RST=*'").c_str());
+            cncSerialBuffer.read();
+            cncSerialBuffer.clear();
+            cncSerial.println("$RST=*");
+            return;
+        }
+
+        static bool postResetCondition{ false };
+        waitUntilControllerResponsive(postResetCondition, OperatingState::State::AnyState,
+                                      OperatingState::State::WaitingForCncControllerReady);
+
+        if(!postResetCondition)
+            return;
+
+        cncSerialBuffer.read();
+        cncSerialBuffer.clear();
+    }
+
+
+    /**
+     * Waits until the controller is responsive.
+     * Requires `condition == false` and `operatingMode.state() == triggerState`.
+     * @param condition shall be false at start; if controller is ready condition is set to true
+     * @param triggerState required state or OperatingState::State::AnySate
+     * @param nextState next state to jump to; can be same state again
+     * @param separationMs time separation in between checks
+     */
+    void waitUntilControllerResponsive(bool &condition_out,
+                                       OperatingState::State triggerState,
+                                       OperatingState::State nextState,
+                                       size_t separationMs = DELAY_MS_FOR_CNC_CONTROLLER_IS_READY_CHECK)
+    {
+        if(condition_out)
+            return;
+
+        if(operatingMode.state() != triggerState && triggerState != OperatingState::State::AnyState)
+            return;
+
+        static elapsedMillis elapsedTimeMs{ separationMs };
+        if(separationMs > 0)
+        {
+            if(elapsedTimeMs < separationMs)
+                return;
+            elapsedTimeMs = 0;
+        }
+
+        Serial.println(std::string(std::to_string(millis()) + " waiting for 'ok' in state " + operatingMode.toString() +
+                                   " (transition:" + OperatingState::toString(triggerState) + " -> " +
+                                   OperatingState::toString(nextState) + ") ...")
+                       .c_str());
+        cncSerialBuffer.read();
+        if(!cncSerialBuffer.hasLine())
+        {
+            Serial.println(std::string(std::to_string(millis()) + " send 'G91'").c_str());
+            cncSerial.println("G91");
+            return;
+        }
+
+        const std::string line{ cncSerialBuffer.getLine() };
+        if(line.starts_with("ok"))
+        {
+            Serial.println(std::string(std::to_string(millis()) + " received 'ok'").c_str());
+            condition_out = true;
+            operatingMode.switchState(nextState);
+            return;
+        }
+    };
+
+
     void process()
     {
+        cncSerialBuffer.read();
+
         handleHaltStates();
-        fetchPendingBytesFromCncSerial();
+        handleBufferedCncReception();
+
+        handleStateDoResetCncController();
         handleStateWaitForCncControllerReady();
 
-        handleBufferedCncReception();
         handleStateRunningFromFile();
         handleBufferedGcodeTransmission();
         handleStateWaitForMotionFinished();
 
         handleStateDoResetWifi();
         handleStateDoReboot();
+
         ArduinoOTA.handle();
     }
 } f;
 
 
-void setup() { f.setup(); }
+void setup()
+{
+    f.setup();
+    f.handleHaltStates();
+    f.operatingMode.switchState(OperatingState::State::DoResetCncController);
+}
 
 void loop() { f.process(); }
 

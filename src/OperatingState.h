@@ -6,19 +6,31 @@ struct OperatingState
 {
     enum struct State : uint8_t
     {
-        Uninitialized,                 // default value after reset/reboot
-        Setup,                         // initialization phase
-        WaitingForCncControllerReady,  // sending G91 until 'ok' is received
+        Uninitialized, // default value after reset/reboot
+
+        // initialization states
+        Setup,                        // initialization phase
+        SetupFinished,                // initialization done
+        DoResetCncController,         // resetting CNC controller to defaults
+        WaitingForCncControllerReady, // sending G91 until 'ok' is received
+
+        // operational states with g-code transfer
         Idle,                          // accept gcode via http
         WaitHttpCommandMotionFinished, // wait until motion is finished (while processing in idle)
         WaitFileCommandMotionFinished, // wait until motion is finished (while processing file)
         RunningFromFile,               // accept gcode only from file
         PausedFromFile,                // on pause request while processing file
         FinishedFromFile,              // intermediate state before returning to idle
-        DoResetWifi,                   // on reset wifi request
-        HaltOnError,                   // halt system due to error
-        DoReboot,                      // on reboot request
-        Invalid,                       // no state, must not occur
+
+        // post operational states followed by reboot
+        DoResetWifi,       // on reset wifi request
+        HaltOnSetupFailed, // halt system due initialization error
+        HaltOnError,       // halt system due to error
+        DoReboot,          // on reboot request
+
+        // no real states
+        AnyState, // dummy state to indicate some state
+        Invalid,  // no state, must not occur
     };
 
     bool switchState(State newState);
