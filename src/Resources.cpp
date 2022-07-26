@@ -19,8 +19,6 @@ Resources::PreInit::PreInit()
     Serial.println(std::string(std::to_string(millis()) + " initialized hardware-serial: baud=" + xstr(SERIAL_MONITOR_BAUD_RATE) +
                                ", config=" + xstr(SERIAL_MONITOR_CONFIG) + ", mode=" + xstr(SERIAL_MONITOR_MODE))
                    .c_str());
-    while(millis() < 125)
-        ;
     Serial.println(std::string(std::to_string(millis()) + " Resources::PreInit::PreInit done").c_str());
 }
 
@@ -50,6 +48,8 @@ void Resources::setup()
         display.screen.setFont(ArialMT_Plain_10);
         display.screen.flipScreenVertically();
         display.screen.setLogBuffer(6, 14);
+        display.screen.clear();
+        display.screen.display();
         Serial.println(std::string(std::to_string(millis()) + " display ready").c_str());
     }();
 
@@ -95,8 +95,6 @@ void Resources::setup()
     {
         WebServerHooks::setup(*this);
         webServer.begin();
-        Serial.println(std::string(std::to_string(millis()) + " Firmware::setup done").c_str());
-        operatingMode.switchState(OperatingState::State::WaitingForCncControllerReady);
     }();
 
     [&]() // over the air firmware update: platformio run --target upload --upload-port <ip-address>
@@ -153,6 +151,9 @@ void Resources::setup()
         Serial.print(std::string(std::to_string(millis()) + " OTA ready: ").c_str());
         Serial.println(WiFi.localIP());
     }();
+
+    Serial.println(std::string(std::to_string(millis()) + " Firmware::setup done").c_str());
+    operatingMode.switchState(OperatingState::State::SetupFinished);
 }
 
 #endif
