@@ -13,6 +13,7 @@ typedef struct GcodeBuffer
     // void setResponseReceived(bool isReceived = true);
     void setMotionFinished(bool isFinished = true);
     void reset();
+    bool isNone() const;
     bool isProcessed() const;
     bool isTransmitted() const;
     bool isResponseOk() const;
@@ -26,6 +27,7 @@ protected:
     bool gcodeTransmitted{ false };
     bool responseReceived{ false };
     bool motionFinished{ true };
+    bool hasGcodeSet{ false };
 
 } GcodeBuffer;
 

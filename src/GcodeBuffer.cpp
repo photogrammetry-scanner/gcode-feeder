@@ -9,7 +9,11 @@ void GcodeBuffer::reset()
     gcodeTransmitted = false;
     responseReceived = false;
     motionFinished = true;
+    hasGcodeSet = false;
 }
+
+
+bool GcodeBuffer::isNone() const { return !hasGcodeSet; }
 
 
 bool GcodeBuffer::isProcessed() const { return gcodeTransmitted && responseReceived; }
@@ -30,6 +34,7 @@ void GcodeBuffer::setGcode(const std::string &g)
 {
     reset();
     gcode = g;
+    hasGcodeSet = true;
     Serial.println(std::string(std::to_string(millis()) + " GcodeBuffer::setGcode:         " + toString() + "").c_str());
 }
 
