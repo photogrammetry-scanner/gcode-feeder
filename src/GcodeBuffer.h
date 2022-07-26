@@ -5,21 +5,21 @@
 
 typedef struct GcodeBuffer
 {
-    const std::string &getGcode() const;
-    const std::string &getResponse() const;
+    [[nodiscard]] const std::string &getGcode() const;
+    [[nodiscard]] const std::string &getResponse() const;
     void setGcode(const std::string &gcode);
     void setResponse(const std::string &response);
     void setTransmitted(bool isTransmitted = true);
     // void setResponseReceived(bool isReceived = true);
     void setMotionFinished(bool isFinished = true);
     void reset();
-    bool isNone() const;
-    bool isProcessed() const;
-    bool isTransmitted() const;
-    bool isResponseOk() const;
-    bool isMotionFinished() const;
-    int16_t getErrorCode() const;
-    std::string toString() const;
+    [[nodiscard]] bool isNone() const;
+    [[nodiscard]] bool isProcessed() const;
+    [[nodiscard]] bool isTransmitted() const;
+    [[nodiscard]] bool isResponseOk() const;
+    [[nodiscard]] bool isMotionFinished() const;
+    [[nodiscard]] int16_t getErrorCode() const;
+    [[nodiscard]] std::string toString() const;
 
 protected:
     std::string gcode;

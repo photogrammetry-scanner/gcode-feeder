@@ -36,8 +36,8 @@ struct OperatingState
     bool switchState(State newState);
     static std::string toString(State state);
     std::string toString();
-    bool isState(State state) const;
-    State state() const;
+    [[nodiscard]] bool isState(State state) const;
+    [[nodiscard]] State state() const;
 
 
 protected:
