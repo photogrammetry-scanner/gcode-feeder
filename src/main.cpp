@@ -114,7 +114,7 @@ struct Firmware : public Resources
 
         if(!gcodeBuffer.isTransmitted())
         {
-            gcodeBuffer.setGcode("?");
+            gcodeBuffer.setGcode(GRBL_CMD_STATUS_REPORT);
             return;
         }
 
@@ -125,7 +125,7 @@ struct Firmware : public Resources
 
         if(gcodeBuffer.isProcessed() && !gcodeBuffer.isResponseOk())
         {
-            gcodeBuffer.setGcode("?");
+            gcodeBuffer.setGcode(GRBL_CMD_STATUS_REPORT);
             cncSerialBuffer.flush();
             return;
         }
@@ -139,7 +139,7 @@ struct Firmware : public Resources
 
 
     /**
-     * Sends "?" to request status and watches for "<Idle.*".
+     * Request status report and watches for "<Idle.*".
      * Additionally forces .read() from CNC serial to reduce latency.
      * Higher latency is will harm performance when processing from file.
      */
@@ -160,7 +160,7 @@ struct Firmware : public Resources
         static uint8_t pendingResponses{ 0 };
         if(pendingResponses == 0)
         {
-            cncSerial.println("?"); // triggers two responses: "ok" + "<Run..." or "<Idle..."
+            cncSerial.println(GRBL_CMD_STATUS_REPORT); // triggers two responses: "ok" + "<Run..." or "<Idle..."
             pendingResponses++;
         }
 
@@ -224,7 +224,7 @@ struct Firmware : public Resources
     {
         if(operatingMode.isState(OperatingState::State::HaltOnSetupFailed) || operatingMode.isState(OperatingState::State::HaltOnError))
         {
-            cncSerial.println("Q");
+            cncSerial.println(GRBL_CMD_RESET);
             while(true)
             {
                 Serial.println(std::string(std::to_string(millis()) + " firmware halted").c_str());
@@ -244,8 +244,8 @@ struct Firmware : public Resources
         {
             isFirst2 = false;
             Serial.println(std::string(std::to_string(millis()) + " rebooting controller ...").c_str());
-            Serial.println(std::string(std::to_string(millis()) + " send 'Q\\r\\n'").c_str());
-            cncSerial.println("Q\r\n");
+            Serial.println(std::string(std::to_string(millis()) + " send '" + GRBL_CMD_RESET + " \\r\\n'").c_str());
+            cncSerial.printf("%c\r\n", GRBL_CMD_RESET);
             delay(200);
             cncSerialBuffer.flush();
             return;

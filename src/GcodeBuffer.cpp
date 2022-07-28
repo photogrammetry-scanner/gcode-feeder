@@ -39,6 +39,9 @@ void GcodeBuffer::setGcode(const std::string &g)
 }
 
 
+void GcodeBuffer::setGcode(char g) { setGcode(std::string{ g }); }
+
+
 void GcodeBuffer::setResponse(const std::string &r)
 {
     response = r;

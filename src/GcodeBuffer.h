@@ -8,6 +8,7 @@ typedef struct GcodeBuffer
     [[nodiscard]] const std::string &getGcode() const;
     [[nodiscard]] const std::string &getResponse() const;
     void setGcode(const std::string &gcode);
+    void setGcode(char gcode);
     void setResponse(const std::string &response);
     void setTransmitted(bool isTransmitted = true);
     // void setResponseReceived(bool isReceived = true);
