@@ -9,7 +9,7 @@ struct OperatingState
         Uninitialized, // default value after reset/reboot
 
         // initialization states
-        Setup,                        // initialization phase
+        DoSetup,                      // initialization phase
         SetupFinished,                // initialization done
         DoResetCncController,         // resetting CNC controller to defaults
         WaitingForCncControllerReady, // sending G91 until 'ok' is received
@@ -23,10 +23,11 @@ struct OperatingState
         FinishedFromFile,              // intermediate state before returning to idle
 
         // post operational states followed by reboot
-        DoResetWifi,       // on reset wifi request
-        HaltOnSetupFailed, // halt system due initialization error
-        HaltOnError,       // halt system due to error
-        DoReboot,          // on reboot request
+        DoResetWifi,           // on reset wifi request
+        DoHaltOnSetupFailed,   // halt system due initialization error
+        DoHaltOnResponseError, // halt system due to error
+        DoHaltOnError,         // halt system due to error
+        DoReboot,              // on reboot request
 
         // no real states
         AnyState, // dummy state to indicate some state

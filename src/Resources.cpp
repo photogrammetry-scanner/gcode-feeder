@@ -34,40 +34,31 @@ namespace
 void setupDisplay(Resources &r)
 {
     Serial.println(std::string(std::to_string(millis()) + " display init ...").c_str());
-    r.display.screen.init();
-    r.display.screen.setFont(ArialMT_Plain_10);
-    r.display.screen.flipScreenVertically();
-    r.display.screen.setLogBuffer(6, 14);
-    r.display.screen.clear();
-    r.display.screen.display();
+    r.display.setup();
     Serial.println(std::string(std::to_string(millis()) + " display ready").c_str());
 }
 
 
 void setupWifi(Resources &r)
 {
-
     Serial.println(std::string(std::to_string(millis()) + " wifi init ...").c_str());
     AsyncWiFiManager wifiManager(&r.webServer, &r.dnsServer);
     wifiManager.setDebugOutput(false);
     wifiManager.setAPStaticIPConfig(IPAddress(1, 1, 1, 1), IPAddress(1, 1, 1, 1), IPAddress(255, 255, 255, 0));
 
-    r.display.screen.drawString(0, Display::L1, "wifi not");
-    r.display.screen.drawString(0, Display::L2, "configured");
-    r.display.screen.drawString(0, Display::L3, "ConfigAP:");
-    r.display.screen.drawString(0, Display::L4, "AutoConfigAP");
-    r.display.screen.drawString(0, Display::L5, "IP: 1.1.1.1");
-    r.display.screen.display();
+    r.display.printLine(Display::L1, "wifi not");
+    r.display.printLine(Display::L2, "configured");
+    r.display.printLine(Display::L3, "ConfigAP:");
+    r.display.printLine(Display::L4, "AutoConfigAP");
+    r.display.printLine(Display::L5, "IP: 1.1.1.1");
+    r.display.displayIfTouched();
     wifiManager.autoConnect("AutoConfigAP");
     Serial.println(std::string(std::to_string(millis()) + " wifi ready").c_str());
 
-    r.display.screen.clear();
-    r.display.screen.drawString(
-    0, Display::L1,
-    std::string("IP: " + std::to_string(WiFi.localIP()[0]) + "." + std::to_string(WiFi.localIP()[1]) + "...").c_str());
-    r.display.screen.drawString(
-    0, Display::L2, std::string("..." + std::to_string(WiFi.localIP()[2]) + "." + std::to_string(WiFi.localIP()[3])).c_str());
-    r.display.screen.display();
+    r.display.clear();
+    r.display.printLine(Display::L1, "IP: " + std::to_string(WiFi.localIP()[0]) + "." + std::to_string(WiFi.localIP()[1]) + "...");
+    r.display.printLine(Display::L2, "..." + std::to_string(WiFi.localIP()[2]) + "." + std::to_string(WiFi.localIP()[3]));
+    r.display.displayIfTouched();
 }
 
 void setupWebServiceHooks(Resources(&r))
@@ -161,7 +152,7 @@ void setupCncSerial(Resources &r)
 void Resources::setup()
 {
     Serial.println(std::string(std::to_string(millis()) + " Firmware::setup ...").c_str());
-    operatingMode.switchState(OperatingState::State::Setup);
+    operatingMode.switchState(OperatingState::State::DoSetup);
 
     setupDisplay(*this);
     setupWifi(*this);

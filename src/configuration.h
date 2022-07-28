@@ -14,8 +14,9 @@
 #define SERIAL_CNC_LINK_TX_PIN D6           // see pins_arduino.h
 
 // ========== section Grbl controller ==========
-#define GRBL_CMD_RESET 'Q'         // see Grbl source: grbl/config.h
-#define GRBL_CMD_STATUS_REPORT '?' // see Grbl source: grbl/config.h
+#define GRBL_CMD_RESET 'Q'                    // see Grbl source: grbl/config.h
+#define GRBL_CMD_STATUS_REPORT '?'            // see Grbl source: grbl/config.h
+#define GRBL_RESTORE_EEPROM_WIPE_ALL "$RST=*" // see Grbl source : grbl / config.h
 
 // ========== section user interface ==========
 

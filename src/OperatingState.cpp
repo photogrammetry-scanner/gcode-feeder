@@ -22,8 +22,8 @@ std::string OperatingState::toString(OperatingState::State s)
     case State::Uninitialized:
         return "Uninitialized";
 
-    case State::Setup:
-        return "Setup";
+    case State::DoSetup:
+        return "DoSetup";
     case State::SetupFinished:
         return "SetupFinished";
     case State::DoResetCncController:
@@ -48,10 +48,12 @@ std::string OperatingState::toString(OperatingState::State s)
     case State::DoResetWifi:
         return "DoResetWifi";
 
-    case State::HaltOnSetupFailed:
-        return "HaltOnSetupFailed";
-    case State::HaltOnError:
-        return "HaltOnError";
+    case State::DoHaltOnSetupFailed:
+        return "DoHaltOnSetupFailed";
+    case State::DoHaltOnResponseError:
+        return "DoHaltOnResponseError";
+    case State::DoHaltOnError:
+        return "DoHaltOnError";
     case State::DoReboot:
         return "DoReboot";
 

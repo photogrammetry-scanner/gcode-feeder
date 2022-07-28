@@ -6,6 +6,16 @@
 
 struct Firmware : public Resources
 {
+    void switchState(OperatingState::State nextState)
+    {
+        operatingMode.switchState(nextState);
+        display.printLine(Display::L5, operatingMode.toString());
+    }
+
+    /**
+     * Try to interpret received lines from CNC controller while in normal operating modes.
+     * Received lines are responses to transmissions from g-code buffer (automatic status reports).
+     */
     void handleBufferedCncReception()
     {
         if(!operatingMode.isState(OperatingState::State::WaitingForCncControllerReady) &&
@@ -18,6 +28,13 @@ struct Firmware : public Resources
             return;
 
         std::string line{ cncSerialBuffer.getLine() };
+        auto printStatus = [&]()
+        {
+            display.printLine(Display::L3, "R " + line);
+            const auto ec{ gcodeBuffer.getErrorCode() };
+            display.printLine(Display::L4, "E " + ((ec < 0) ? "-" : std::to_string(ec)));
+        };
+
         if(!gcodeBuffer.isProcessed())
         {
             gcodeBuffer.setResponse(line);
@@ -25,9 +42,9 @@ struct Firmware : public Resources
         else
         {
             Serial.println(std::string(std::to_string(millis()) + " received unexpected cnc response '" + line + "'").c_str());
+            printStatus();
             return;
         }
-
 
         const uint8_t allowedSubsequentErrors{ 100 };
         static uint8_t subsequentErrors{ 0 };
@@ -37,20 +54,21 @@ struct Firmware : public Resources
             Serial.println(std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() +
                                        "' is erroneous (code=" + std::to_string(gcodeBuffer.getErrorCode()) + "), retransmit line")
                            .c_str());
+            printStatus();
             if(subsequentErrors >= allowedSubsequentErrors)
             {
                 Serial.println(std::string(std::to_string(millis()) + " error: too many erroneous responses (" +
                                            std::to_string(subsequentErrors) + "), aborting")
                                .c_str());
                 subsequentErrors = 0;
-                operatingMode.switchState(OperatingState::State::HaltOnError);
+                switchState(OperatingState::State::DoHaltOnResponseError);
             }
             else
             {
                 subsequentErrors++;
                 const std::string gcode{ gcodeBuffer.getGcode() };
                 gcodeBuffer.setGcode(gcode);
-                cncSerialBuffer.clear();
+                // cncSerialBuffer.clear();
                 delay(100);
             }
             return;
@@ -58,18 +76,20 @@ struct Firmware : public Resources
 
         Serial.println(std::string(std::to_string(millis()) + " cnc response '" + gcodeBuffer.getResponse() + "'").c_str());
         subsequentErrors = 0;
-
+        printStatus();
 
         if(!gcodeBuffer.isMotionFinished())
         {
             if(operatingMode.isState(OperatingState::State::RunningFromFile))
-                operatingMode.switchState(OperatingState::State::WaitFileCommandMotionFinished);
+                switchState(OperatingState::State::WaitFileCommandMotionFinished);
             if(operatingMode.isState(OperatingState::State::Idle))
-                operatingMode.switchState(OperatingState::State::WaitHttpCommandMotionFinished);
+                switchState(OperatingState::State::WaitHttpCommandMotionFinished);
         }
     }
 
-
+    /**
+     * Transmit buffered g-code.
+     */
     void handleBufferedGcodeTransmission()
     {
         if(!gcodeBuffer.isNone() && !gcodeBuffer.isProcessed() && !gcodeBuffer.isTransmitted())
@@ -77,10 +97,10 @@ struct Firmware : public Resources
             Serial.println(std::string(std::to_string(millis()) + " send gcode='" + gcodeBuffer.getGcode() + "'").c_str());
             if(operatingMode.isState(OperatingState::State::Idle) || operatingMode.isState(OperatingState::State::RunningFromFile))
             {
-                display.screen.clear();
-                display.screen.drawString(0, Display::L1, "gcode->cnc");
-                display.screen.drawString(0, Display::L2, gcodeBuffer.getGcode().c_str());
-                display.screen.display();
+                display.printLine(Display::L1, (!gcodeBuffer.isProcessed()) ? gcodeBuffer.getGcode() : "");
+                display.printLine(Display::L2, (operatingMode.isState(OperatingState::State::RunningFromFile)) ?
+                                               std::to_string(gcodeFileRunner.getCurrentLine()) :
+                                               "");
             }
             cncSerial.print(std::string(gcodeBuffer.getGcode() + '\n').c_str());
             gcodeBuffer.setTransmitted();
@@ -132,8 +152,8 @@ struct Firmware : public Resources
 
         if(gcodeBuffer.isProcessed() && gcodeBuffer.isResponseOk())
         {
-            cncSerialBuffer.flush();
-            operatingMode.switchState(OperatingState::State::Idle);
+            // cncSerialBuffer.flush();
+            switchState(OperatingState::State::Idle);
         }
     }
 
@@ -194,10 +214,10 @@ struct Firmware : public Resources
         cncSerialBuffer.flush();
 
         if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished))
-            operatingMode.switchState(OperatingState::State::RunningFromFile);
+            switchState(OperatingState::State::RunningFromFile);
 
         if(operatingMode.isState(OperatingState::State::WaitHttpCommandMotionFinished))
-            operatingMode.switchState(OperatingState::State::Idle);
+            switchState(OperatingState::State::Idle);
     }
 
 
@@ -222,18 +242,30 @@ struct Firmware : public Resources
 
     void handleHaltStates()
     {
-        if(operatingMode.isState(OperatingState::State::HaltOnSetupFailed) || operatingMode.isState(OperatingState::State::HaltOnError))
+        if(operatingMode.isState(OperatingState::State::DoHaltOnSetupFailed) ||
+           operatingMode.isState(OperatingState::State::DoHaltOnResponseError) ||
+           operatingMode.isState(OperatingState::State::DoHaltOnError))
         {
             cncSerial.println(GRBL_CMD_RESET);
             while(true)
             {
                 Serial.println(std::string(std::to_string(millis()) + " firmware halted").c_str());
+                display.clear();
+                display.printLine(Display::L1, "halted");
+                display.printLine(Display::L5, operatingMode.toString());
+                display.displayIfTouched();
                 EspClass::deepSleep(EspClass::deepSleepMax());
             }
         }
     }
 
 
+    /**
+     * Reset the CNC controller:
+     *  1. waits until controller is responsive
+     *  2. sends '$RST=*\r\n', controller then resets settings and reboots
+     *  3. waits until controller is responsive again
+     */
     void handleStateDoResetCncController()
     {
         if(!operatingMode.isState(OperatingState::State::DoResetCncController))
@@ -261,8 +293,8 @@ struct Firmware : public Resources
         {
             isFirst = false;
             Serial.println(std::string(std::to_string(millis()) + " resetting controller ...").c_str());
-            Serial.println(std::string(std::to_string(millis()) + " send '$RST=*'").c_str());
-            cncSerial.println("$RST=*");
+            Serial.println(std::string(std::to_string(millis()) + " send '" + GRBL_RESTORE_EEPROM_WIPE_ALL + "'").c_str());
+            cncSerial.println(GRBL_RESTORE_EEPROM_WIPE_ALL);
             delay(200);
             cncSerialBuffer.flush();
             return;
@@ -280,7 +312,7 @@ struct Firmware : public Resources
 
 
     /**
-     * Waits until the controller is responsive.
+     * Waits until the controller is responsive: sends \r\n until response 'OK' is received.
      * Requires `condition == false` and `operatingMode.state() == triggerState`.
      * @param condition shall be false at start; if controller is ready condition is set to true
      * @param triggerState required state or OperatingState::State::AnySate
@@ -323,7 +355,7 @@ struct Firmware : public Resources
         {
             Serial.println(std::string(std::to_string(millis()) + " controller responded 'ok'").c_str());
             condition_out = true;
-            operatingMode.switchState(nextState);
+            switchState(nextState);
             cncSerialBuffer.flush();
             return;
         }
@@ -333,6 +365,7 @@ struct Firmware : public Resources
     void process()
     {
         cncSerialBuffer.read();
+        display.displayIfTouched();
 
         handleHaltStates();
         handleBufferedCncReception();
@@ -356,7 +389,7 @@ void setup()
 {
     f.setup();
     f.handleHaltStates();
-    f.operatingMode.switchState(OperatingState::State::DoResetCncController);
+    f.switchState(OperatingState::State::DoResetCncController);
 }
 
 void loop() { f.process(); }
