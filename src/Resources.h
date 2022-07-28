@@ -30,12 +30,17 @@
 
 typedef struct Resources
 {
-    void setup();
-
     struct PreInit
     {
         PreInit();
     } _preInit{};
+
+    struct PostInit
+    {
+        explicit PostInit(Resources &r);
+    };
+
+    void setup();
 
     OperatingState operatingMode{};
 
@@ -49,11 +54,6 @@ typedef struct Resources
 
     GcodeBuffer gcodeBuffer{};
     GcodeFileRunner gcodeFileRunner{ gcodeBuffer, operatingMode };
-
-    struct PostInit
-    {
-        explicit PostInit(Resources &r);
-    } _postInit{ *this };
 
 } Resources;
 

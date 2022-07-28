@@ -12,10 +12,17 @@
 
 Resources::PreInit::PreInit()
 {
-    WiFi.mode(WIFI_OFF);
+    while(millis() < 100)
+        EspClass::wdtFeed();
     Serial.begin(SERIAL_MONITOR_BAUD_RATE, SERIAL_MONITOR_CONFIG, SERIAL_MONITOR_MODE);
     Serial.println("\n\n\n");
-    Serial.println(std::string(std::to_string(millis()) + " Resources::PreInit::PreInit ...").c_str());
+    while(millis() < 400)
+    {
+        EspClass::wdtFeed();
+        delayMicroseconds(10000);
+        Serial.print('.');
+    }
+    Serial.println();
     Serial.println(std::string(std::to_string(millis()) + " initialized hardware-serial: baud=" + xstr(SERIAL_MONITOR_BAUD_RATE) +
                                ", config=" + xstr(SERIAL_MONITOR_CONFIG) + ", mode=" + xstr(SERIAL_MONITOR_MODE))
                    .c_str());
@@ -32,6 +39,7 @@ Resources::PostInit::PostInit(Resources &r)
                                ", rx_pin=" + xstr(SERIAL_CNC_LINK_RX_PIN) + ", tx_pin=" + xstr(SERIAL_CNC_LINK_TX_PIN))
                    .c_str());
     Serial.println(std::string(std::to_string(millis()) + " Resources::PostInit::PostInit done").c_str());
+    r.cncSerial.flush();
 }
 
 
@@ -153,6 +161,7 @@ void Resources::setup()
     }();
 
     Serial.println(std::string(std::to_string(millis()) + " Firmware::setup done").c_str());
+    PostInit{ *this };
     operatingMode.switchState(OperatingState::State::SetupFinished);
 }
 
