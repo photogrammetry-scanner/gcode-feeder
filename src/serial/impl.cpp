@@ -13,7 +13,7 @@ std::string getAndRemoveLine(std::string &buffer, bool inclusiveNewlineCharacter
     {
         buffer.erase(0, 1);
         if(inclusiveNewlineCharacter)
-            return std::string("\n");
+            return std::string{ '\n' };
         else
             return {};
     }
@@ -27,8 +27,6 @@ std::string getAndRemoveLine(std::string &buffer, bool inclusiveNewlineCharacter
 
         return nextLine;
     }
-
-    return {};
 }
 
 
