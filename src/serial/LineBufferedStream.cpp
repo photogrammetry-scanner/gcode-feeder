@@ -8,6 +8,7 @@ LineBufferedStream::LineBufferedStream(Stream &s) : stream(s) {}
 
 bool LineBufferedStream::read()
 {
+    bool hasRead{ false };
     while(stream.available())
     {
         int i = stream.read();
@@ -16,14 +17,20 @@ bool LineBufferedStream::read()
 
         char c = static_cast<char>(i);
         if(bufferChar(buffer, c))
-            return true;
+            hasRead = true;
     }
-    return false;
+    return hasRead;
 }
 
 
 void LineBufferedStream::clear() { buffer.clear(); }
 
+
+void LineBufferedStream::flush()
+{
+    read();
+    clear();
+}
 
 bool LineBufferedStream::hasLine() const { return buffer.find('\n', 0) != std::string::npos; }
 

@@ -10,12 +10,13 @@ typedef struct LineBufferedStream
     explicit LineBufferedStream(Stream &stream);
     bool read();
     void clear();
-    bool hasLine() const;
+    void flush();
+    [[nodiscard]] bool hasLine() const;
     std::string getLine(bool inclusiveNewlineCharacter = false);
 
 protected:
     Stream &stream;
     std::string buffer;
 
-} LineBufferedSerial;
+} LineBufferedStream;
 #endif
