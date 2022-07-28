@@ -35,11 +35,6 @@ typedef struct Resources
         PreInit();
     } _preInit{};
 
-    struct PostInit
-    {
-        explicit PostInit(Resources &r);
-    };
-
     void setup();
 
     OperatingState operatingMode{};
