@@ -1,9 +1,9 @@
 #if !defined(ENV_NATIVE)
 #include "Resources.h"
+#include "WebServerHooks.h"
+#include <ArduinoOTA.h>
 #include <HardwareSerial.h>
 #include <LittleFS.h>
-
-#include <ArduinoOTA.h>
 #include <WiFiUdp.h>
 
 #define xstr(s) str(s)
@@ -70,6 +70,11 @@ void setupWifi(Resources &r)
     r.display.screen.display();
 }
 
+void setupWebServiceHooks(Resources(&r))
+{
+    WebServerHooks::setup(r);
+    r.webServer.begin();
+}
 
 void setupOtaUpdateService()
 {
@@ -160,6 +165,7 @@ void Resources::setup()
 
     setupDisplay(*this);
     setupWifi(*this);
+    setupWebServiceHooks(*this);
     setupOtaUpdateService();
     setupFilesystem();
     setupCncSerial(*this);
