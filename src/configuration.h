@@ -8,10 +8,10 @@
 #define SERIAL_MONITOR_MODE SERIAL_FULL  // see HardwareSerial.h
 
 // The connection to CNC controller uses a software serial.
-#define SERIAL_CNC_LINK_BAUD_RATE 28800     // reasonable rates: 28800, 57600, 115200 (decrease on xmission errors)
+#define SERIAL_CNC_LINK_BAUD_RATE 38400     // reasonable rates: http://wormfood.net/avrbaudcalc.php
 #define SERIAL_CNC_LINK_CONFIG SWSERIAL_8N1 // see SoftwareSerial.h
-#define SERIAL_CNC_LINK_RX_PIN D8           // see pins_arduino.h
-#define SERIAL_CNC_LINK_TX_PIN D3           // see pins_arduino.h
+#define SERIAL_CNC_LINK_RX_PIN D7           // see pins_arduino.h
+#define SERIAL_CNC_LINK_TX_PIN D6           // see pins_arduino.h
 
 // ========== section user interface ==========
 
