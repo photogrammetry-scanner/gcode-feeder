@@ -114,20 +114,25 @@ struct Firmware : public Resources
 
         if(!gcodeBuffer.isTransmitted())
         {
-            gcodeBuffer.setGcode("G91");
+            gcodeBuffer.setGcode("?");
             return;
         }
 
-        if(!gcodeBuffer.isProcessed() || !gcodeBuffer.isResponseOk())
+        if(!gcodeBuffer.isProcessed())
         {
-            gcodeBuffer.setGcode("G91");
+            return;
+        }
+
+        if(gcodeBuffer.isProcessed() && !gcodeBuffer.isResponseOk())
+        {
+            gcodeBuffer.setGcode("?");
+            cncSerialBuffer.flush();
             return;
         }
 
         if(gcodeBuffer.isProcessed() && gcodeBuffer.isResponseOk())
         {
-            cncSerialBuffer.read();
-            cncSerialBuffer.clear();
+            cncSerialBuffer.flush();
             operatingMode.switchState(OperatingState::State::Idle);
         }
     }
@@ -186,8 +191,7 @@ struct Firmware : public Resources
 
         pendingResponses = 0;
         gcodeBuffer.setMotionFinished();
-        cncSerialBuffer.read();
-        cncSerialBuffer.clear();
+        cncSerialBuffer.flush();
 
         if(operatingMode.isState(OperatingState::State::WaitFileCommandMotionFinished))
             operatingMode.switchState(OperatingState::State::RunningFromFile);
@@ -235,6 +239,18 @@ struct Firmware : public Resources
         if(!operatingMode.isState(OperatingState::State::DoResetCncController))
             return;
 
+        static bool isFirst2{ true };
+        if(isFirst2)
+        {
+            isFirst2 = false;
+            Serial.println(std::string(std::to_string(millis()) + " rebooting controller ...").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " send 'Q\\r\\n'").c_str());
+            cncSerial.println("Q\r\n");
+            delay(200);
+            cncSerialBuffer.flush();
+            return;
+        }
+
         static bool preResetCondition{ false };
         waitUntilControllerResponsive(preResetCondition, OperatingState::State::AnyState, OperatingState::State::DoResetCncController);
         if(!preResetCondition)
@@ -246,9 +262,9 @@ struct Firmware : public Resources
             isFirst = false;
             Serial.println(std::string(std::to_string(millis()) + " resetting controller ...").c_str());
             Serial.println(std::string(std::to_string(millis()) + " send '$RST=*'").c_str());
-            cncSerialBuffer.read();
-            cncSerialBuffer.clear();
             cncSerial.println("$RST=*");
+            delay(200);
+            cncSerialBuffer.flush();
             return;
         }
 
@@ -259,8 +275,7 @@ struct Firmware : public Resources
         if(!postResetCondition)
             return;
 
-        cncSerialBuffer.read();
-        cncSerialBuffer.clear();
+        cncSerialBuffer.flush();
     }
 
 
@@ -295,20 +310,21 @@ struct Firmware : public Resources
                                    " (transition:" + OperatingState::toString(triggerState) + " -> " +
                                    OperatingState::toString(nextState) + ") ...")
                        .c_str());
-        cncSerialBuffer.read();
+
         if(!cncSerialBuffer.hasLine())
         {
-            Serial.println(std::string(std::to_string(millis()) + " send 'G91'").c_str());
-            cncSerial.println("G91");
+            Serial.println(std::string(std::to_string(millis()) + " send '\\r\\n'").c_str());
+            cncSerial.print("\r\n");
             return;
         }
 
         const std::string line{ cncSerialBuffer.getLine() };
-        if(line.starts_with("ok"))
+        if(line == "ok")
         {
-            Serial.println(std::string(std::to_string(millis()) + " received 'ok'").c_str());
+            Serial.println(std::string(std::to_string(millis()) + " controller responded 'ok'").c_str());
             condition_out = true;
             operatingMode.switchState(nextState);
+            cncSerialBuffer.flush();
             return;
         }
     };
