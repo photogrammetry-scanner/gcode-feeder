@@ -67,7 +67,7 @@ void indexHtml(AsyncWebServerRequest &request, const String &extra_pre_html = ""
         "    <button type=\"button\" onclick=\"setAbsoluteMotion()\">Absolute (G90)</button>\n"
         "    <p/>\n"
         "    <b>File Upload</b>"
-        "    <form method=\"POST\" action=\"/api/uploadfile\" enctype=\"multipart/form-data\">\n"
+        "    <form method=\"POST\" action=\"/api/file/upload\" enctype=\"multipart/form-data\">\n"
         "      <input type=\"file\" name=\"data\"/>\n"
         "      <input type=\"submit\" name=\"upload\" value=\"Upload File\" title=\"Upload File\">\n"
         "    </form>\n"
@@ -355,9 +355,6 @@ void listFiles(AsyncWebServerRequest &request)
         message += "    }";
 
         file = root.openNextFile();
-
-        if(file)
-            message += ',';
     }
 
     request.send(200, "application/json", std::string("{\n  \"message\":{" + message + "},\n  \"request\":\"ok\"\n}").c_str());
