@@ -1,82 +1,103 @@
-; test program: home then initialize, perform programmed moves and gracefully finish program
-
-; home, absolute positioning, stop spindle/servo, disable servo signal
 $H
+G21
+G53
+G92 X0 Y0 Z0
+$100=13.95
+$102=2560.0
+$120=300
+$122=7
+F20000
+$110=20000
+$112=200
 G90
 M5
 S0
-
-; feed rate, unit is mm, work in machine coordinates
-F500
-G21
-G53
-
-; set current position manually to (X,Z)=(0,0), move to position (0,0): eliminates one GRBL error message
-G92 X0 Z0
 G1 X0 Z0
-
-; enable spindle/servo, move servo to min pos, disable stepper driver idling
 M3
 S1
 $1=255
-
-; Z0
 Z0
-
-; move, dwell, activate servo, dwell
-X10
-G4 P1.0
+X0.0
+Z0.0
+G4 P0.8
 S1000
-G4 P0.25
+G4 P0.2
 S1
-
-X20
-G4 P1.0
+G4 P0.2
+X768.1
+G4 P0.8
 S1000
-G4 P0.25
+G4 P0.2
 S1
-
-X30
-G4 P1.0
+G4 P0.2
+X1536.2
+G4 P0.8
 S1000
-G4 P0.25
+G4 P0.2
 S1
-
-; Z10
-Z10
-
-X20
-G4 P1.0
+G4 P0.2
+X2304.4
+G4 P0.8
 S1000
-G4 P0.25
+G4 P0.2
 S1
-
-X10
-G4 P1.0
+G4 P0.2
+G92 X0
+X0.0
+Z133.3
+G4 P0.8
 S1000
-G4 P0.25
+G4 P0.2
 S1
-
-X0
-G4 P1.0
+G4 P0.2
+X768.1
+G4 P0.8
 S1000
-G4 P0.25
+G4 P0.2
 S1
-
-; wave
-S1
+G4 P0.2
+X1536.2
+G4 P0.8
 S1000
+G4 P0.2
 S1
-
-; re-enable stepper driver idling to 25ms; request movement of 0 to activate idling
+G4 P0.2
+X2304.4
+G4 P0.8
+S1000
+G4 P0.2
+S1
+G4 P0.2
+G92 X0
+X0.0
+Z266.7
+G4 P0.8
+S1000
+G4 P0.2
+S1
+G4 P0.2
+X768.1
+G4 P0.8
+S1000
+G4 P0.2
+S1
+G4 P0.2
+X1536.2
+G4 P0.8
+S1000
+G4 P0.2
+S1
+G4 P0.2
+X2304.4
+G4 P0.8
+S1000
+G4 P0.2
+S1
+G4 P0.2
 $1=25
-G91
-Z+0.01
-Z-0.01
-
-; stop servo signal, stop spindle, end program
+G90
+Z0.01
+Z0
 S0
 M5
 M2
-
-; program finished
