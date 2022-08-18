@@ -78,6 +78,9 @@ struct Firmware : public Resources
         subsequentErrors = 0;
         printStatus();
 
+        if(gcodeBuffer.getGcode().starts_with('$')) // '$' commands trigger no motions
+            gcodeBuffer.setMotionFinished(true);
+
         if(!gcodeBuffer.isMotionFinished())
         {
             if(operatingMode.isState(OperatingState::State::RunningFromFile))
